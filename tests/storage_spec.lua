@@ -214,6 +214,23 @@ describe("Storage", function()
             assert.is_nil(newCharacter.recovery)
         end)
 
+        -- At logout reconcile runs again with nothing arrived empty. Notes
+        -- made during the session must be counted then, or losing them
+        -- before the next login would go unnoticed.
+        it("counts the session's new notes when called again at logout", function()
+            local account, character = Storage.load(nil, NOW), Storage.load(nil, NOW)
+            Storage.reconcile(account, character, GUID, NOW)
+            assert.are.equal(0, account.characters[GUID])
+
+            Model.create(character, character.root.id, "page", "written today", NOW)
+            Model.create(account, account.root.id, "page", "shared", NOW)
+            Storage.reconcile(account, character, GUID, NOW + 1)
+            assert.are.equal(1, account.characters[GUID])
+            assert.are.equal(1, character.accountCount)
+            assert.is_nil(account.recovery)
+            assert.is_nil(character.recovery)
+        end)
+
         it("records nothing for a character whose GUID it may not use", function()
             local account, character = savedTable(), savedTable()
             Storage.reconcile(account, character, nil, NOW)
