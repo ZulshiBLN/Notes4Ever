@@ -107,6 +107,15 @@ describe("Model", function()
             assert.are.equal(NOW + 6, page.modified)
         end)
 
+        it("refuse an empty or blank title", function()
+            local db = Model.newTable(NOW)
+            local page = Model.create(db, db.root.id, "page", "keep", NOW)
+            assert.is_nil(Model.rename(db, page.id, "", NOW + 1))
+            assert.is_nil(Model.rename(db, page.id, "   ", NOW + 1))
+            assert.are.equal("keep", page.title)
+            assert.are.equal(NOW, page.modified)
+        end)
+
         it("refuse text on a folder", function()
             local db = Model.newTable(NOW)
             local folder = Model.create(db, db.root.id, "folder", "f", NOW)
@@ -124,7 +133,7 @@ describe("Model", function()
             Model.setText(db, page.id, "keep me", NOW)
             local id = page.id
 
-            assert.is_true(Model.move(db, page.id, db, b.id, NOW + 1))
+            assert.is_table(Model.move(db, page.id, db, b.id, NOW + 1))
             assert.are.same({}, a.children)
             assert.are.equal(id, b.children[1].id)
             assert.are.equal("keep me", b.children[1].text)
@@ -142,6 +151,27 @@ describe("Model", function()
         end)
     end)
 
+    -- The editor follows a moved page by the node move returns: within a
+    -- table that is the node itself, across tables the copy with new ids.
+    describe("what move returns", function()
+        it("is the node itself within a table", function()
+            local db = Model.newTable(NOW)
+            local folder = Model.create(db, db.root.id, "folder", "f", NOW)
+            local page = Model.create(db, db.root.id, "page", "p", NOW)
+            assert.are.equal(page, Model.move(db, page.id, db, folder.id, NOW))
+        end)
+
+        it("is the copy in the target table across tables", function()
+            local account, character = Model.newTable(NOW), Model.newTable(NOW)
+            Model.create(character, character.root.id, "page", "taking an id", NOW)
+            local page = Model.create(account, account.root.id, "page", "p", NOW)
+            local moved = Model.move(account, page.id, character, character.root.id, NOW)
+            assert.are.equal(moved, Model.find(character, moved.id))
+            assert.are.equal("p", moved.title)
+            assert.are_not.equal(page.id, moved.id)
+        end)
+    end)
+
     describe("move across roots", function()
         it("moves account -> character and back with subtree and text intact", function()
             local account, character = Model.newTable(NOW), Model.newTable(NOW)
@@ -150,12 +180,12 @@ describe("Model", function()
             Model.setText(account, page.id, "north road |cffff0000 äöü\nline two", NOW)
             local picture = shape(folder)
 
-            assert.is_true(Model.move(account, folder.id, character, character.root.id, NOW + 1))
+            assert.is_table(Model.move(account, folder.id, character, character.root.id, NOW + 1))
             assert.are.same({}, account.root.children)
             assert.are.same(picture, shape(character.root.children[1]))
 
             local moved = character.root.children[1]
-            assert.is_true(Model.move(character, moved.id, account, account.root.id, NOW + 2))
+            assert.is_table(Model.move(character, moved.id, account, account.root.id, NOW + 2))
             assert.are.same({}, character.root.children)
             assert.are.same(picture, shape(account.root.children[1]))
         end)
@@ -178,13 +208,13 @@ describe("Model", function()
 
             for _, db in ipairs({ alice, bob }) do
                 while db.root.children[1] do
-                    assert.is_true(Model.move(db, db.root.children[1].id, account, account.root.id, NOW))
+                    assert.is_table(Model.move(db, db.root.children[1].id, account, account.root.id, NOW))
                 end
             end
             -- And one back and forth again, to churn the counters.
             local first = account.root.children[1]
-            assert.is_true(Model.move(account, first.id, alice, alice.root.id, NOW))
-            assert.is_true(Model.move(alice, alice.root.children[1].id, account, account.root.id, NOW))
+            assert.is_table(Model.move(account, first.id, alice, alice.root.id, NOW))
+            assert.is_table(Model.move(alice, alice.root.children[1].id, account, account.root.id, NOW))
 
             local _, duplicate, count = idsOf(account)
             assert.is_nil(duplicate)

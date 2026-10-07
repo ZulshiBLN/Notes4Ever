@@ -61,9 +61,11 @@ function Model.create(db, parentId, kind, title, now)
     return node
 end
 
+-- A blank title is refused: a row with no text cannot be found or clicked.
 function Model.rename(db, id, title, now)
     local node = Model.find(db, id)
     if not node then return nil, "not_found" end
+    if type(title) ~= "string" or not title:find("%S") then return nil, "empty_title" end
     node.title = title
     node.modified = now
     return true
@@ -117,8 +119,10 @@ local function copyInto(db, node)
 end
 
 -- Moves a node, with its subtree, under a folder in the same or the other
--- table. The node is inserted at the target before it is removed from the
--- source, so a refusal at the target leaves the source as it was.
+-- table, and returns the node now in place: the same node within a table,
+-- its copy with fresh ids across tables. The node is inserted at the target
+-- before it is removed from the source, so a refusal at the target leaves
+-- the source as it was.
 function Model.move(fromDb, id, toDb, toParentId, now)
     local node, parent = Model.find(fromDb, id)
     if not node then return nil, "not_found" end
@@ -140,7 +144,7 @@ function Model.move(fromDb, id, toDb, toParentId, now)
     -- Within one folder the node now sits twice; detach drops the first,
     -- which leaves it moved to the end.
     detach(parent, node)
-    return true
+    return moved
 end
 
 -- Removes a node and its subtree; returns how many nodes went.
