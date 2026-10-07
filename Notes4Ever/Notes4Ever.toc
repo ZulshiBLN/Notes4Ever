@@ -1,0 +1,14 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: Notes4Ever
+## Notes: An in-game notebook with nested pages.
+## Author: Michel Brosche
+## Version: 0.1.0
+## X-License: MIT
+## SavedVariables: Notes4EverDB
+## SavedVariablesPerCharacter: Notes4EverCharDB
+## AddonCompartmentFunc: Notes4Ever_OnAddonCompartmentClick
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+
+Locales\enUS.lua
+Core.lua
