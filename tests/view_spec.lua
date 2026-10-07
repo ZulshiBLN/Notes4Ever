@@ -143,6 +143,13 @@ describe("View.rows", function()
         assert.is_false(rows[4].hasChildren)
     end)
 
+    it("builds row keys the way View.key does, so callers can find a row", function()
+        local account = Model.newTable(NOW)
+        local page = Model.create(account, account.root.id, "page", "p", NOW)
+        local rows = View.rows(account, Model.newTable(NOW), {}, LABELS)
+        assert.are.equal(View.key("account", page.id), rows[2].key)
+    end)
+
     it("keys rows uniquely across the two tables, whose ids overlap", function()
         local account, character = Model.newTable(NOW), Model.newTable(NOW)
         Model.create(account, account.root.id, "page", "a", NOW)

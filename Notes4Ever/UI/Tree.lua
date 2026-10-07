@@ -1,10 +1,11 @@
 local addonName, ns = ...
 
-local L, View, Skin = ns.L, ns.View, ns.Skin
+local L, Model, View, Skin = ns.L, ns.Model, ns.View, ns.Skin
 
 -- The tree on the window's left: a scroll list of the rows View.rows works
 -- out. Which rows exist, their depth and what is open is decided there; this
--- file only lays the rows out and turns clicks into View calls.
+-- file only lays the rows out and turns clicks into View calls. A right
+-- click opens the actions menu (UI/Actions.lua).
 local Tree = {}
 ns.Tree = Tree
 
@@ -12,12 +13,17 @@ local ROW_HEIGHT = 20
 local INDENT = 14
 local EXPANDER_SIZE = 14
 
--- What the player has opened or closed, and the selected page. Per session:
--- the tree opens with roots open and folders closed.
+-- What the player has opened or closed, and the selected page as
+-- { table = , id = }. Per session: the tree opens with roots open and
+-- folders closed.
 local expanded = {}
-local selectedKey
+local selected
 
 local scrollBox
+
+local function tables()
+    return { account = Notes4EverDB, character = Notes4EverCharDB }
+end
 
 local function currentRows()
     return View.rows(Notes4EverDB, Notes4EverCharDB, expanded,
@@ -25,20 +31,41 @@ local function currentRows()
 end
 
 function Tree.Refresh()
+    -- A selected page that a delete removed is no longer selected.
+    if selected and not Model.find(tables()[selected.table], selected.id) then
+        selected = nil
+    end
     if not scrollBox then return end
     scrollBox:SetDataProvider(CreateDataProvider(currentRows()),
         ScrollBoxConstants.RetainScrollPosition)
 end
 
--- The key of the selected page, or nil.
+-- The selected page as { table = , id = }, or nil.
 function Tree.Selected()
-    return selectedKey
+    return selected
 end
 
-local function onClick(button)
+function Tree.Select(tableName, id)
+    selected = { table = tableName, id = id }
+end
+
+-- Opens a folder, so a note just created or moved into it is visible.
+function Tree.Expand(tableName, id)
+    expanded[View.key(tableName, id)] = true
+end
+
+local function isSelected(row)
+    return selected ~= nil and row.table == selected.table and row.id == selected.id
+end
+
+local function onClick(button, mouseButton)
     local row = button.row
+    if mouseButton == "RightButton" then
+        ns.Actions.ShowMenu(button, row)
+        return
+    end
     if row.hasChildren then View.toggle(expanded, row) end
-    if row.kind == "page" then selectedKey = row.key end
+    if row.kind == "page" then Tree.Select(row.table, row.id) end
     Tree.Refresh()
 end
 
@@ -52,6 +79,7 @@ local function initRow(button, row)
         button.selection:SetAllPoints()
         button.label = button:CreateFontString(nil, "OVERLAY")
         button.label:SetJustifyH("LEFT")
+        button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         button:SetScript("OnClick", onClick)
     end
 
@@ -59,7 +87,7 @@ local function initRow(button, row)
     button.expander:ClearAllPoints()
     button.expander:SetPoint("LEFT", left, 0)
     button.expander:SetShown(row.hasChildren)
-    button.selection:SetShown(row.key == selectedKey)
+    button.selection:SetShown(isSelected(row))
     button.label:ClearAllPoints()
     button.label:SetPoint("LEFT", left + EXPANDER_SIZE + 4, 0)
     button.label:SetPoint("RIGHT", -4, 0)

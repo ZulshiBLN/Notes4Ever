@@ -31,6 +31,7 @@ end
 local function keyOf(tableName, id)
     return tableName .. ":" .. id
 end
+View.key = keyOf
 
 -- `expanded` holds what the player opened or closed, by row key. Anything
 -- not in it takes the default: roots open, folders closed.

@@ -18,5 +18,6 @@ View.lua
 Skin.lua
 Skins\Blizzard.lua
 UI\Tree.lua
+UI\Actions.lua
 UI\Window.lua
 Core.lua

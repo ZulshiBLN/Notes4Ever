@@ -6,7 +6,8 @@ Create pages, organise them in folders, and keep notes on anything — dungeons,
 professions, routes, to-do lists — without leaving the game.
 
 > Status: in development. Nothing is released yet. The current build loads on
-> WoW: Forever and opens an empty notebook window; notes cannot be written yet.
+> WoW: Forever; folders and pages can be created and organised, but page
+> text cannot be written yet.
 
 ## Commands
 
@@ -17,6 +18,17 @@ professions, routes, to-do lists — without leaving the game.
 
 The AddOn compartment entry (the button beside the minimap) opens the window
 too. Escape closes it; drag it to move it, and the corner grip to resize it.
+
+## Organising notes
+
+The window's left side lists **Account notes** and **Character notes**. Click
+a folder to open or close it. Right-click a row for:
+
+- **New folder** / **New page** — inside the clicked folder; you name it at once
+- **Rename**
+- **Move to** — any folder of either set; moving between account and
+  character notes takes the whole subtree along
+- **Delete** — asks first and says how many folders and pages go with it
 
 ## Where your notes live, and how to keep them
 

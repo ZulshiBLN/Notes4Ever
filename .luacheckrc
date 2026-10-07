@@ -18,6 +18,12 @@ globals = {
 -- reported instead of trusted. SlashCmdList and StaticPopupDialogs are shared
 -- by every addon; only our own entries may be written.
 read_globals = {
+    "ACCEPT",
+    "CANCEL",
+    "MenuUtil",
+    "NO",
+    "StaticPopup_Show",
+    "YES",
     "ButtonFrameTemplate_HidePortrait",
     "C_AddOns",
     "CreateDataProvider",

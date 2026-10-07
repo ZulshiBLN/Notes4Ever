@@ -4,6 +4,16 @@ local addonName, ns = ...
 -- with its own table and falls back to this one per key, so a string it has
 -- not translated yet shows in English rather than as an error.
 ns.L_enUS = {
+    DELETE_CONFIRM   = "Delete \"%s\"?\n%s",
+    DELETE_COUNTS    = "%s folder(s) and %s page(s) will be removed.",
+    MENU_DELETE      = "Delete",
+    MENU_MOVE        = "Move to",
+    MENU_NEW_FOLDER  = "New folder",
+    MENU_NEW_PAGE    = "New page",
+    MENU_RENAME      = "Rename",
+    NEW_FOLDER_TITLE = "Untitled folder",
+    NEW_PAGE_TITLE   = "Untitled page",
+    RENAME_PROMPT    = "New name:",
     ROOT_ACCOUNT   = "Account notes",
     ROOT_CHARACTER = "Character notes",
     STATUS_HEADER  = "%s %s",

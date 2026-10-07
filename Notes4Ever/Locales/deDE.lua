@@ -3,6 +3,16 @@ local addonName, ns = ...
 if GetLocale() ~= "deDE" then return end
 
 ns.L = setmetatable({
+    DELETE_CONFIRM   = "\"%s\" löschen?\n%s",
+    DELETE_COUNTS    = "%s Ordner und %s Seite(n) werden entfernt.",
+    MENU_DELETE      = "Löschen",
+    MENU_MOVE        = "Verschieben nach",
+    MENU_NEW_FOLDER  = "Neuer Ordner",
+    MENU_NEW_PAGE    = "Neue Seite",
+    MENU_RENAME      = "Umbenennen",
+    NEW_FOLDER_TITLE = "Unbenannter Ordner",
+    NEW_PAGE_TITLE   = "Unbenannte Seite",
+    RENAME_PROMPT    = "Neuer Name:",
     ROOT_ACCOUNT   = "Account-Notizen",
     ROOT_CHARACTER = "Charakter-Notizen",
     STATUS_HEADER  = "%s Version %s",
