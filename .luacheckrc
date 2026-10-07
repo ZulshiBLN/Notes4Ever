@@ -32,5 +32,5 @@ ignore = { "211/addonName" }
 -- the addon's sources.
 files["tests/"] = {
     std = "lua51+busted",
-    not_globals = {},
+    read_globals = { "io", "require", "loadfile" },
 }

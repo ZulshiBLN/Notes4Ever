@@ -10,3 +10,5 @@ All notable changes to Notes4Ever. The format follows
 
 - `/n4e status` (or `/notes`) and the AddOn compartment entry print the addon's
   version and whether account and character notes are stored.
+- German texts on a German client; anything not yet translated shows in
+  English.

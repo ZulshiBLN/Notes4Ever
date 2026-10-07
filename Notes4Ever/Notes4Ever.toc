@@ -11,4 +11,5 @@
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
 
 Locales\enUS.lua
+Locales\deDE.lua
 Core.lua
