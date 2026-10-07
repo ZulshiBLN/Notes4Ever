@@ -133,14 +133,19 @@ end
 -- If the page is gone - deleted while open - nothing is written and the
 -- editor closes: text must never land on a page that no longer exists.
 function View.editorFlush(editor, tables, now)
-    if editor.pending == nil or not editor.page then return false end
-    local text = editor.pending
-    editor.pending = nil
     local page = editor.page
+    if not page then return false end
+    -- Checked before anything else: a page deleted while open must close the
+    -- editor even with nothing typed, or the player types into a ghost and
+    -- that text is dropped at the next flush.
     if not Model.find(tables[page.table], page.id) then
         editor.page = nil
+        editor.pending = nil
         return false
     end
+    if editor.pending == nil then return false end
+    local text = editor.pending
+    editor.pending = nil
     Model.setText(tables[page.table], page.id, text, now)
     return true
 end

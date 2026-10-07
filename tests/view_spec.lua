@@ -327,6 +327,16 @@ describe("View editor", function()
         assert.is_nil(View.editorPage(editor))
     end)
 
+    -- Found in game: a deleted page stayed in the editor when nothing had
+    -- been typed, and text typed into that ghost would have been dropped.
+    it("closes after its page was deleted even when nothing was typed", function()
+        local tables, page, editor = setup()
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        Model.delete(tables.account, page.id)
+        assert.is_false(View.editorFlush(editor, tables, NOW + 1))
+        assert.is_nil(View.editorPage(editor))
+    end)
+
     it("follows its page to the new id when the page moves to the other table", function()
         local tables, page, editor = setup()
         View.editorOpen(editor, tables, "account", page.id, NOW)
