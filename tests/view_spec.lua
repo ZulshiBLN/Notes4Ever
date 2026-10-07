@@ -155,3 +155,109 @@ describe("View.rows", function()
         assert.are.equal(4, (function() local n = 0 for _ in pairs(seen) do n = n + 1 end return n end)())
     end)
 end)
+
+describe("View.moveTargets", function()
+    local View, Model
+    local NOW = 3000
+    local LABELS = { account = "Account notes", character = "Character notes" }
+
+    before_each(function()
+        local ns = {}
+        addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/View.lua", ns)
+        View, Model = ns.View, ns.Model
+    end)
+
+    local function names(targets)
+        local out = {}
+        for i, t in ipairs(targets) do out[i] = string.rep("  ", t.depth) .. t.title end
+        return out
+    end
+
+    -- account: a/ (a1/ (deep page)), b/, page   character: c/
+    local function fixture()
+        local account, character = Model.newTable(NOW), Model.newTable(NOW)
+        local a = Model.create(account, account.root.id, "folder", "a", NOW)
+        local a1 = Model.create(account, a.id, "folder", "a1", NOW)
+        Model.create(account, a1.id, "page", "deep page", NOW)
+        Model.create(account, account.root.id, "folder", "b", NOW)
+        local page = Model.create(account, account.root.id, "page", "page", NOW)
+        Model.create(character, character.root.id, "folder", "c", NOW)
+        return account, character, a, page
+    end
+
+    it("offers every folder of both roots, roots included, and no pages", function()
+        local account, character, _, page = fixture()
+        assert.are.same({ "Account notes", "  a", "    a1", "  b", "Character notes", "  c" },
+                        names(View.moveTargets(account, character, "account", page.id, LABELS)))
+    end)
+
+    it("leaves out the node itself and its whole subtree", function()
+        local account, character, a = fixture()
+        assert.are.same({ "Account notes", "  b", "Character notes", "  c" },
+                        names(View.moveTargets(account, character, "account", a.id, LABELS)))
+    end)
+
+    it("keeps a folder in the other table that shares the moving node's id", function()
+        local account, character = Model.newTable(NOW), Model.newTable(NOW)
+        local mine = Model.create(account, account.root.id, "folder", "mine", NOW)
+        local twin = Model.create(character, character.root.id, "folder", "twin", NOW)
+        assert.are.equal(mine.id, twin.id)
+        assert.are.same({ "Account notes", "Character notes", "  twin" },
+                        names(View.moveTargets(account, character, "account", mine.id, LABELS)))
+    end)
+
+    it("says which table and id each target is", function()
+        local account, character, _, page = fixture()
+        local targets = View.moveTargets(account, character, "account", page.id, LABELS)
+        assert.are.equal("character", targets[5].table)
+        assert.are.equal(character.root.id, targets[5].id)
+    end)
+
+    it("offers nothing for a root, which cannot move", function()
+        local account, character = fixture()
+        assert.is_nil(View.moveTargets(account, character, "account", account.root.id, LABELS))
+    end)
+end)
+
+describe("View.deleteSummary", function()
+    local View, Model
+    local NOW = 3000
+
+    before_each(function()
+        local ns = {}
+        addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/View.lua", ns)
+        View, Model = ns.View, ns.Model
+    end)
+
+    it("counts the folders and pages a delete removes, the node included", function()
+        local db = Model.newTable(NOW)
+        local gone = Model.create(db, db.root.id, "folder", "gone", NOW)
+        Model.create(db, gone.id, "page", "p1", NOW)
+        local inner = Model.create(db, gone.id, "folder", "inner", NOW)
+        Model.create(db, inner.id, "page", "p2", NOW)
+        Model.create(db, db.root.id, "page", "kept", NOW)
+
+        assert.are.same({ title = "gone", folders = 2, pages = 2 }, View.deleteSummary(db, gone.id))
+    end)
+
+    it("counts a single page as one page", function()
+        local db = Model.newTable(NOW)
+        local page = Model.create(db, db.root.id, "page", "p", NOW)
+        assert.are.same({ title = "p", folders = 0, pages = 1 }, View.deleteSummary(db, page.id))
+    end)
+
+    it("matches what Model.delete then removes", function()
+        local db = Model.newTable(NOW)
+        local gone = Model.create(db, db.root.id, "folder", "gone", NOW)
+        Model.create(db, gone.id, "page", "p", NOW)
+        local summary = View.deleteSummary(db, gone.id)
+        assert.are.equal(summary.folders + summary.pages, Model.delete(db, gone.id))
+    end)
+
+    it("offers nothing for a root, which cannot be deleted", function()
+        local db = Model.newTable(NOW)
+        assert.is_nil(View.deleteSummary(db, db.root.id))
+    end)
+end)
