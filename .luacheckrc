@@ -15,8 +15,8 @@ globals = {
 }
 
 -- The WoW API the addon reads, listed by hand so a typo or a removed API is
--- reported instead of trusted. SlashCmdList is shared by every addon; only
--- our own entry may be written.
+-- reported instead of trusted. SlashCmdList and StaticPopupDialogs are shared
+-- by every addon; only our own entries may be written.
 read_globals = {
     "C_AddOns",
     "CreateFrame",
@@ -27,6 +27,7 @@ read_globals = {
     "strtrim",
     "time",
     SlashCmdList = { fields = { NOTES4EVER = { read_only = false } } },
+    StaticPopupDialogs = { fields = { NOTES4EVER_DELETE = { read_only = false } } },
 }
 
 -- Every addon file opens with `local addonName, ns = ...` (code.md), whether

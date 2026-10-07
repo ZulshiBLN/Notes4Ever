@@ -52,12 +52,17 @@ describe(".luacheckrc", function()
         assert.is_true(hasCode("SlashCmdList.SOMEONE_ELSE = print\n", "142"))
     end)
 
+    it("refuses writing another addon's popup entry", function()
+        assert.is_true(hasCode("StaticPopupDialogs.SOMEONE_ELSE = {}\n", "142"))
+    end)
+
     it("allows exactly the globals the rule names", function()
         local allowed = table.concat({
             "Notes4EverDB = {}",
             "Notes4EverCharDB = {}",
             'SLASH_NOTES4EVER1 = "/n4e"',
             "SlashCmdList.NOTES4EVER = print",
+            "StaticPopupDialogs.NOTES4EVER_DELETE = {}",
             "function Notes4Ever_OnAddonCompartmentClick() end",
         }, "\n") .. "\n"
         assert.are.equal(0, warningsFor(allowed))
