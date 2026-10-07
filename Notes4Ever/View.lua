@@ -19,7 +19,7 @@ local POINTS = {
 
 -- A finite number, or nil: NaN and infinities fail the comparisons below.
 local function finite(value)
-    if type(value) == "number" and value == value and value > -math.huge and value < math.huge then
+    if type(value) == "number" and value > -math.huge and value < math.huge then
         return value
     end
 end
