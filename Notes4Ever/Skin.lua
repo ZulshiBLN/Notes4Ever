@@ -11,11 +11,12 @@ function Skin:Register(name, roles)
     self.skins[name] = roles
 end
 
--- Styles `frame` for `role` with the active skin, and returns the frame. A
--- role the skin does not know is left as created.
-function Skin:Apply(role, frame)
+-- Styles `frame` for `role` with the active skin, and returns the frame.
+-- Anything after the frame - a tree row's state, say - is passed on to the
+-- skin. A role the skin does not know is left as created.
+function Skin:Apply(role, frame, ...)
     local skin = self.skins[self.active]
     local style = skin and skin[role]
-    if style then style(frame) end
+    if style then style(frame, ...) end
     return frame
 end

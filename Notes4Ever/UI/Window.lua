@@ -61,6 +61,10 @@ local function build()
         saveGeometry()
     end)
 
+    -- ButtonFrameTemplate's inset is the content area below the title.
+    ns.Tree.Create(frame.Inset or frame)
+    frame:SetScript("OnShow", ns.Tree.Refresh)
+
     tinsert(UISpecialFrames, FRAME_NAME)
     frame:Hide()
     applyGeometry()
