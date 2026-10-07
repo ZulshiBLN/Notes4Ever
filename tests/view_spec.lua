@@ -268,3 +268,110 @@ describe("View.deleteSummary", function()
         assert.is_nil(View.deleteSummary(db, db.root.id))
     end)
 end)
+
+-- The editor's pending text: typed into the box, written to the model on a
+-- flush - after a pause, on hiding, on changing page, before a tree action,
+-- at logout. Whatever the trigger, these rules hold.
+describe("View editor", function()
+    local View, Model
+    local NOW = 4000
+
+    before_each(function()
+        local ns = {}
+        addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/View.lua", ns)
+        View, Model = ns.View, ns.Model
+    end)
+
+    local function setup()
+        local tables = { account = Model.newTable(NOW), character = Model.newTable(NOW) }
+        local page = Model.create(tables.account, tables.account.root.id, "page", "p", NOW)
+        Model.setText(tables.account, page.id, "saved", NOW)
+        local editor = View.newEditor()
+        return tables, page, editor
+    end
+
+    it("shows the page's text when opened", function()
+        local tables, page, editor = setup()
+        assert.are.equal("saved", View.editorOpen(editor, tables, "account", page.id, NOW))
+    end)
+
+    it("writes typed text once per flush, and nothing when nothing changed", function()
+        local tables, page, editor = setup()
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        View.editorType(editor, "typed")
+        assert.is_true(View.editorFlush(editor, tables, NOW + 1))
+        assert.are.equal("typed", page.text)
+        assert.are.equal(NOW + 1, page.modified)
+
+        assert.is_false(View.editorFlush(editor, tables, NOW + 2))
+        assert.are.equal(NOW + 1, page.modified)
+    end)
+
+    it("writes the previous page's text before opening another", function()
+        local tables, page, editor = setup()
+        local other = Model.create(tables.account, tables.account.root.id, "page", "o", NOW)
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        View.editorType(editor, "for p")
+        View.editorOpen(editor, tables, "account", other.id, NOW + 1)
+        assert.are.equal("for p", page.text)
+        assert.are.equal("", other.text)
+    end)
+
+    it("writes nothing after its page was deleted, and closes", function()
+        local tables, page, editor = setup()
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        View.editorType(editor, "too late")
+        Model.delete(tables.account, page.id)
+        assert.is_false(View.editorFlush(editor, tables, NOW + 1))
+        assert.is_nil(View.editorPage(editor))
+    end)
+
+    it("follows its page to the new id when the page moves to the other table", function()
+        local tables, page, editor = setup()
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        View.editorType(editor, "before the move")
+        View.editorFlush(editor, tables, NOW)            -- every tree action flushes first
+
+        local moved, ids = Model.move(tables.account, page.id, tables.character, tables.character.root.id, NOW)
+        View.editorFollow(editor, "account", "character", ids)
+        View.editorType(editor, "after the move")
+        assert.is_true(View.editorFlush(editor, tables, NOW + 1))
+
+        assert.are.same({ table = "character", id = moved.id }, View.editorPage(editor))
+        assert.are.equal("after the move", moved.text)
+    end)
+
+    it("follows its page when a folder holding it moves to the other table", function()
+        local tables, _, editor = setup()
+        local folder = Model.create(tables.account, tables.account.root.id, "folder", "f", NOW)
+        local deep = Model.create(tables.account, folder.id, "page", "deep", NOW)
+        View.editorOpen(editor, tables, "account", deep.id, NOW)
+
+        local _, ids = Model.move(tables.account, folder.id, tables.character, tables.character.root.id, NOW)
+        View.editorFollow(editor, "account", "character", ids)
+        View.editorType(editor, "still found")
+        assert.is_true(View.editorFlush(editor, tables, NOW + 1))
+        assert.are.equal("still found", Model.find(tables.character, ids[deep.id]).text)
+    end)
+
+    it("keeps its page through a move within one table", function()
+        local tables, page, editor = setup()
+        local folder = Model.create(tables.account, tables.account.root.id, "folder", "f", NOW)
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        local _, ids = Model.move(tables.account, page.id, tables.account, folder.id, NOW)
+        View.editorFollow(editor, "account", "account", ids)
+        View.editorType(editor, "same id")
+        assert.is_true(View.editorFlush(editor, tables, NOW + 1))
+        assert.are.equal("same id", page.text)
+    end)
+
+    it("ignores a move that does not involve its page", function()
+        local tables, page, editor = setup()
+        local other = Model.create(tables.account, tables.account.root.id, "page", "o", NOW)
+        View.editorOpen(editor, tables, "account", page.id, NOW)
+        local _, ids = Model.move(tables.account, other.id, tables.character, tables.character.root.id, NOW)
+        View.editorFollow(editor, "account", "character", ids)
+        assert.are.same({ table = "account", id = page.id }, View.editorPage(editor))
+    end)
+end)

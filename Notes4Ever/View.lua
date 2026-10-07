@@ -115,6 +115,62 @@ function View.deleteSummary(db, id)
     return summary
 end
 
+-- The editor ---------------------------------------------------------------
+
+-- What the editor shows and what it has not written yet. The frame calls
+-- editorType on every keystroke and editorFlush on each trigger: a pause,
+-- hiding the window, opening another page, before a tree action, logout.
+function View.newEditor()
+    return {}
+end
+
+-- The open page as { table = , id = }, or nil.
+function View.editorPage(editor)
+    return editor.page
+end
+
+-- Writes pending text to the open page. True if something was written.
+-- If the page is gone - deleted while open - nothing is written and the
+-- editor closes: text must never land on a page that no longer exists.
+function View.editorFlush(editor, tables, now)
+    if editor.pending == nil or not editor.page then return false end
+    local text = editor.pending
+    editor.pending = nil
+    local page = editor.page
+    if not Model.find(tables[page.table], page.id) then
+        editor.page = nil
+        return false
+    end
+    Model.setText(tables[page.table], page.id, text, now)
+    return true
+end
+
+-- Opens a page, writing the previous one's pending text first, and returns
+-- the text to show - nil if there is no such page.
+function View.editorOpen(editor, tables, tableName, id, now)
+    View.editorFlush(editor, tables, now)
+    local node = Model.find(tables[tableName], id)
+    if not node or node.kind ~= "page" then
+        editor.page = nil
+        return nil
+    end
+    editor.page = { table = tableName, id = id }
+    return node.text
+end
+
+function View.editorType(editor, text)
+    if editor.page then editor.pending = text end
+end
+
+-- After a move: across tables every id in the moved subtree changed, and
+-- `ids` maps old to new. The open page follows if it was in that subtree.
+function View.editorFollow(editor, fromTable, toTable, ids)
+    local page = editor.page
+    if not page or not ids or page.table ~= fromTable then return end
+    local newId = ids[page.id]
+    if newId then editor.page = { table = toTable, id = newId } end
+end
+
 -- The stored window geometry, made safe to apply. Whatever is missing or
 -- malformed takes its default - the field is a convenience and is never
 -- trusted - and a size below the minimum is raised to it.
