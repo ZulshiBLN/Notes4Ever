@@ -85,27 +85,45 @@ describe("Storage", function()
     end)
 
     describe("migration", function()
-        -- A schema 2 that adds a field, standing in for the first real one.
+        -- A test schema one above the real one, so these keep testing the
+        -- mechanism whatever the current version is.
         local function addTags(db)
             db.tags = db.tags or {}
         end
+        local function nextSchema(migrate)
+            local current = Model.SCHEMA_VERSION
+            return { schemaVersion = current + 1, migrations = { [current] = migrate } }
+        end
 
         it("applies a migration once; loading its output again changes nothing", function()
-            local options = { schemaVersion = 2, migrations = { [1] = addTags } }
+            local options = nextSchema(addTags)
             local first = Storage.load(savedTable(), NOW, options)
-            assert.are.equal(2, first.schemaVersion)
+            assert.are.equal(Model.SCHEMA_VERSION + 1, first.schemaVersion)
             assert.are.same({}, first.tags)
 
             local second = Storage.load(deepCopy(first), NOW, options)
             assert.are.same(without(first, "loads"), without(second, "loads"))
         end)
 
+        -- The real migration, not a test one: schema 1 tables are what every
+        -- player of 0.1.0 has on disk.
+        it("brings a schema 1 table to the current schema; loading that again changes nothing", function()
+            local v1 = savedTable()
+            v1.schemaVersion = 1
+            local first = Storage.load(deepCopy(v1), NOW)
+            assert.are.equal(Model.SCHEMA_VERSION, first.schemaVersion)
+            assert.are.same(v1.root, first.root)
+
+            local second = Storage.load(deepCopy(first), NOW)
+            assert.are.same(without(first, "loads"), without(second, "loads"))
+        end)
+
         it("keeps the input unchanged in recovery when a migration raises midway", function()
             local saved = savedTable()
-            local options = { schemaVersion = 2, migrations = { [1] = function(db)
+            local options = nextSchema(function(db)
                 db.root.children = nil
                 error("half done")
-            end } }
+            end)
             local db = Storage.load(deepCopy(saved), NOW, options)
             assert.are.same({}, db.root.children)
             assert.are.equal(1, #db.recovery)
@@ -148,6 +166,18 @@ describe("Storage", function()
             assert.are.equal("broken once", twice.recovery[1].data.root)
             assert.are.equal("broken twice", twice.recovery[2].data.root.kind)
             assert.is_nil(twice.recovery[2].data.recovery)
+        end)
+
+        -- Window geometry is a convenience; a broken value must never hide
+        -- the notes beside it. View.geometry falls back to defaults.
+        it("is never caused by a malformed ui field", function()
+            for _, ui in ipairs({ "garbage", 42, { width = "wide", x = {} } }) do
+                local saved = savedTable()
+                saved.ui = ui
+                local db = Storage.load(deepCopy(saved), NOW)
+                assert.is_nil(db.recovery)
+                assert.are.same(saved.root, db.root)
+            end
         end)
 
         it("keeps a table that is not a table at all", function()

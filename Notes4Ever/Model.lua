@@ -12,7 +12,7 @@ local addonName, ns = ...
 local Model = {}
 ns.Model = Model
 
-Model.SCHEMA_VERSION = 1
+Model.SCHEMA_VERSION = 2
 
 local KINDS = { folder = true, page = true }
 Model.KINDS = KINDS

@@ -11,8 +11,11 @@ local Storage = {}
 ns.Storage = Storage
 
 -- Upgrades by schema version: migrations[v] turns a v table into v + 1.
--- Schema 1 is the first, so there are none yet.
-Storage.migrations = {}
+Storage.migrations = {
+    -- Schema 2 may carry `ui`, the window geometry. It is optional and read
+    -- with defaults, so a schema 1 table needs no change, only the new number.
+    [1] = function() end,
+}
 
 local function deepCopy(value)
     if type(value) ~= "table" then return value end
