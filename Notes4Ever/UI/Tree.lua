@@ -13,6 +13,7 @@ local ROW_HEIGHT = 20
 local INDENT = 14
 local EXPANDER_SIZE = 14
 local ICON_SIZE = 14
+Tree.WIDTH = 220
 
 -- What the player has opened or closed, and the selected page as
 -- { table = , id = }. Per session: the tree opens with roots open and
@@ -66,7 +67,10 @@ local function onClick(button, mouseButton)
         return
     end
     if row.hasChildren then View.toggle(expanded, row) end
-    if row.kind == "page" then Tree.Select(row.table, row.id) end
+    if row.kind == "page" then
+        Tree.Select(row.table, row.id)
+        ns.Editor.Open(row.table, row.id)
+    end
     Tree.Refresh()
 end
 
@@ -112,7 +116,7 @@ function Tree.Create(parent)
     local scrollBar = CreateFrame("EventFrame", nil, parent, "MinimalScrollBar")
     scrollBox:SetPoint("TOPLEFT", 4, -4)
     scrollBox:SetPoint("BOTTOMLEFT", 4, 4)
-    scrollBox:SetWidth(220)
+    scrollBox:SetWidth(Tree.WIDTH)
     scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 4, 0)
     scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 4, 0)
 

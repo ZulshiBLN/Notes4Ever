@@ -5,6 +5,7 @@ if GetLocale() ~= "deDE" then return end
 ns.L = setmetatable({
     DELETE_CONFIRM   = "\"%s\" löschen?\n%s",
     DELETE_COUNTS    = "%s Ordner und %s Seite(n) werden entfernt.",
+    EDITOR_HINT      = "Wähle links eine Seite, oder lege per Rechtsklick auf einen Ordner eine an.",
     MENU_DELETE      = "Löschen",
     MENU_MOVE        = "Verschieben nach",
     MENU_NEW_FOLDER  = "Neuer Ordner",

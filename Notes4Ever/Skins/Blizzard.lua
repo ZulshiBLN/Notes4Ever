@@ -26,6 +26,14 @@ ns.Skin:Register("Blizzard", {
         button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     end,
 
+    editor = function(_, editBox)
+        editBox:SetFontObject(GameFontHighlight)
+    end,
+
+    hint = function(fontString)
+        fontString:SetFontObject(GameFontDisable)
+    end,
+
     resizeGrip = function(button)
         button:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
         button:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")

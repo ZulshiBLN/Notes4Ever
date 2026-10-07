@@ -6,8 +6,7 @@ Create pages, organise them in folders, and keep notes on anything — dungeons,
 professions, routes, to-do lists — without leaving the game.
 
 > Status: in development. Nothing is released yet. The current build loads on
-> WoW: Forever; folders and pages can be created and organised, but page
-> text cannot be written yet.
+> WoW: Forever; folders and pages can be created, organised and written in.
 
 ## Commands
 
@@ -29,6 +28,11 @@ a folder to open or close it. Right-click a row for:
 - **Move to** — any folder of either set; moving between account and
   character notes takes the whole subtree along
 - **Delete** — asks first and says how many folders and pages go with it
+
+Click a page to write in it on the right. Text is saved a moment after you
+stop typing, and at once when you close the window, open another page,
+change the tree, log out or `/reload`. Escape leaves the text field; a
+second Escape closes the window.
 
 ## Where your notes live, and how to keep them
 

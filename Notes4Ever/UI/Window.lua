@@ -61,9 +61,14 @@ local function build()
         saveGeometry()
     end)
 
-    -- ButtonFrameTemplate's inset is the content area below the title.
-    ns.Tree.Create(frame.Inset or frame)
+    -- ButtonFrameTemplate's inset is the content area below the title: the
+    -- tree on the left, the editor beside it.
+    local content = frame.Inset or frame
+    ns.Tree.Create(content)
+    ns.Editor.Create(content, ns.Tree.WIDTH + 24)
     frame:SetScript("OnShow", ns.Tree.Refresh)
+    -- Closing the window is a flush trigger: nothing typed waits for a timer.
+    frame:SetScript("OnHide", ns.Editor.Flush)
 
     tinsert(UISpecialFrames, FRAME_NAME)
     frame:Hide()

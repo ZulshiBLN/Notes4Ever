@@ -9,9 +9,18 @@ local version = C_AddOns.GetAddOnMetadata(addonName, "Version")
 -- PLAYER_LOGIN, when the character's GUID is known.
 local arrived = {}
 
+-- Unit identity may be a secret value on Forever; a secret cannot be a
+-- table key, so such a session records no count.
+local function playerGuid()
+    local guid = UnitGUID("player")
+    if issecretvalue and issecretvalue(guid) then return nil end
+    return guid
+end
+
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("PLAYER_LOGOUT")
 frame:SetScript("OnEvent", function(_, event, name)
     if event == "ADDON_LOADED" and name == addonName then
         -- The client has just filled the SavedVariables; this is the first
@@ -21,14 +30,16 @@ frame:SetScript("OnEvent", function(_, event, name)
         Notes4EverDB = Storage.load(Notes4EverDB, time())
         Notes4EverCharDB = Storage.load(Notes4EverCharDB, time())
     elseif event == "PLAYER_LOGIN" then
-        -- Unit identity may be a secret value on Forever; a secret cannot be
-        -- a table key, so such a login records no count.
-        local guid = UnitGUID("player")
-        if issecretvalue and issecretvalue(guid) then guid = nil end
-        Storage.reconcile(Notes4EverDB, Notes4EverCharDB, guid, time(), arrived)
+        Storage.reconcile(Notes4EverDB, Notes4EverCharDB, playerGuid(), time(), arrived)
         for _, message in ipairs(Storage.warnings(Notes4EverDB, Notes4EverCharDB, L)) do
             print(message)
         end
+    elseif event == "PLAYER_LOGOUT" then
+        -- The last moment before the client writes the SavedVariables - on
+        -- /reload too. Typed text is written, then this session's notes are
+        -- counted, so a later loss of either file is noticed.
+        ns.Editor.Flush()
+        Storage.reconcile(Notes4EverDB, Notes4EverCharDB, playerGuid(), time())
     end
 end)
 

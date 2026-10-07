@@ -23,7 +23,10 @@ local function editBoxOf(popup)
     return popup.editBox or popup.EditBox
 end
 
+-- Every action writes the editor's pending text first: a move across
+-- tables changes ids, and a delete would otherwise take typed text along.
 local function rename(popup, data)
+    ns.Editor.Flush()
     Model.rename(tables()[data.table], data.id, editBoxOf(popup):GetText(), time())
     ns.Tree.Refresh()
 end
@@ -64,7 +67,10 @@ StaticPopupDialogs.NOTES4EVER_DELETE = {
     whileDead = true,
     hideOnEscape = true,
     OnAccept = function(_, data)
+        ns.Editor.Flush()
         Model.delete(tables()[data.table], data.id)
+        -- If the open page went with it, this flush finds it gone and closes.
+        ns.Editor.Flush()
         ns.Tree.Refresh()
     end,
 }
@@ -77,6 +83,7 @@ end
 -- A new folder or page goes into the clicked folder, which opens, and is
 -- named at once.
 local function create(row, kind)
+    ns.Editor.Flush()
     local title = kind == "folder" and L.NEW_FOLDER_TITLE or L.NEW_PAGE_TITLE
     local node = Model.create(tables()[row.table], row.id, kind, title, time())
     if not node then return end
@@ -86,19 +93,23 @@ local function create(row, kind)
 end
 
 local function move(row, target)
+    ns.Editor.Flush()
     local db = tables()
-    local wasSelected = ns.Tree.Selected()
-    local moved = Model.move(db[row.table], row.id, db[target.table], target.id, time())
+    local selected = ns.Tree.Selected()
+    local moved, ids = Model.move(db[row.table], row.id, db[target.table], target.id, time())
     if not moved then return end
-    -- A move across tables gives the page new ids; the selection follows it.
-    if wasSelected and wasSelected.table == row.table and wasSelected.id == row.id then
-        ns.Tree.Select(target.table, moved.id)
+    -- Across tables every id in the moved subtree changed. The selection and
+    -- the editor follow a page that moved - itself or inside a folder.
+    if ids and selected and selected.table == row.table and ids[selected.id] then
+        ns.Tree.Select(target.table, ids[selected.id])
     end
+    ns.Editor.Follow(row.table, target.table, ids)
     ns.Tree.Expand(target.table, target.id)
     ns.Tree.Refresh()
 end
 
 local function confirmDelete(row)
+    ns.Editor.Flush()
     local summary = View.deleteSummary(tables()[row.table], row.id)
     if not summary then return end
     StaticPopup_Show("NOTES4EVER_DELETE", summary.title,

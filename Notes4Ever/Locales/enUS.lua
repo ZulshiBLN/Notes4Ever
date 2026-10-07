@@ -6,6 +6,7 @@ local addonName, ns = ...
 ns.L_enUS = {
     DELETE_CONFIRM   = "Delete \"%s\"?\n%s",
     DELETE_COUNTS    = "%s folder(s) and %s page(s) will be removed.",
+    EDITOR_HINT      = "Select a page on the left, or right-click a folder to create one.",
     MENU_DELETE      = "Delete",
     MENU_MOVE        = "Move to",
     MENU_NEW_FOLDER  = "New folder",
