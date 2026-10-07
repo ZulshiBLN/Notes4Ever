@@ -51,6 +51,7 @@ end
 
 function Model.create(db, parentId, kind, title, now)
     if not KINDS[kind] then return nil, "bad_kind" end
+    if type(title) ~= "string" or not title:find("%S") then return nil, "empty_title" end
     local parent, err = folderIn(db, parentId)
     if not parent then return nil, err end
 

@@ -17,7 +17,7 @@ Checked in game on WoW: Forever 1.60.1.70245 (interface 16001).
   folder and page marked by its own icon; folders open and close on click.
   Right-click a row for new folder, new page, rename, move to any folder of
   either set, and delete - which first asks, naming how many folders and
-  pages go.
+  pages go. A new folder or page is named first; Cancel creates nothing.
 - Click a page to write in it. Text is saved a moment after you stop typing,
   and at once when you close the window, open another page, change the tree,
   log out or reload.

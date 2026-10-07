@@ -92,6 +92,19 @@ describe("Model", function()
             assert.is_nil(Model.create(db, db.root.id, "picture", "x", NOW))
             assert.are.same(before, db)
         end)
+
+        it("refuses a blank or missing title, as rename does", function()
+            local db = Model.newTable(NOW)
+            local before = deepCopy(db)
+
+            for _, title in ipairs({ "", "   ", "\t\n" }) do
+                local node, err = Model.create(db, db.root.id, "page", title, NOW)
+                assert.is_nil(node)
+                assert.are.equal("empty_title", err)
+            end
+            assert.is_nil(Model.create(db, db.root.id, "folder", nil, NOW))
+            assert.are.same(before, db)
+        end)
     end)
 
     describe("rename and setText", function()

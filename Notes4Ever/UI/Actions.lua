@@ -25,14 +25,16 @@ end
 
 -- Every action writes the editor's pending text first: a move across
 -- tables changes ids, and a delete would otherwise take typed text along.
-local function rename(popup, data)
+-- The name popup serves rename and create; `data.apply` does the change,
+-- so Cancel and Escape change nothing - a new node exists only once named.
+local function applyName(popup, data)
     ns.Editor.Flush()
-    Model.rename(tables()[data.table], data.id, editBoxOf(popup):GetText(), time())
+    data.apply(editBoxOf(popup):GetText())
     ns.Tree.Refresh()
 end
 
 -- Text from L; the buttons use the game's own localised words.
-StaticPopupDialogs.NOTES4EVER_RENAME = {
+StaticPopupDialogs.NOTES4EVER_NAME = {
     text = L.RENAME_PROMPT,
     button1 = ACCEPT,
     button2 = CANCEL,
@@ -47,10 +49,10 @@ StaticPopupDialogs.NOTES4EVER_RENAME = {
         edit:HighlightText()
         edit:SetFocus()
     end,
-    OnAccept = rename,
+    OnAccept = applyName,
     EditBoxOnEnterPressed = function(edit, data)
         local popup = edit:GetParent()
-        rename(popup, data)
+        applyName(popup, data)
         popup:Hide()
     end,
     EditBoxOnEscapePressed = function(edit)
@@ -75,21 +77,26 @@ StaticPopupDialogs.NOTES4EVER_DELETE = {
     end,
 }
 
-local function askRename(tableName, node)
-    StaticPopup_Show("NOTES4EVER_RENAME", nil, nil,
-        { table = tableName, id = node.id, title = node.title })
+local function askRename(row)
+    StaticPopup_Show("NOTES4EVER_NAME", nil, nil, {
+        title = row.title,
+        apply = function(text)
+            Model.rename(tables()[row.table], row.id, text, time())
+        end,
+    })
 end
 
--- A new folder or page goes into the clicked folder, which opens, and is
--- named at once.
+-- A new folder or page is named first and created on Accept, in the clicked
+-- folder, which opens. A blank name creates nothing - Model refuses it.
 local function create(row, kind)
-    ns.Editor.Flush()
-    local title = kind == "folder" and L.NEW_FOLDER_TITLE or L.NEW_PAGE_TITLE
-    local node = Model.create(tables()[row.table], row.id, kind, title, time())
-    if not node then return end
-    ns.Tree.Expand(row.table, row.id)
-    ns.Tree.Refresh()
-    askRename(row.table, node)
+    StaticPopup_Show("NOTES4EVER_NAME", nil, nil, {
+        title = kind == "folder" and L.NEW_FOLDER_TITLE or L.NEW_PAGE_TITLE,
+        apply = function(text)
+            if Model.create(tables()[row.table], row.id, kind, text, time()) then
+                ns.Tree.Expand(row.table, row.id)
+            end
+        end,
+    })
 end
 
 local function move(row, target)
@@ -125,9 +132,7 @@ function Actions.ShowMenu(owner, row)
         end
         if row.isRoot then return end
 
-        menu:CreateButton(L.MENU_RENAME, function()
-            askRename(row.table, { id = row.id, title = row.title })
-        end)
+        menu:CreateButton(L.MENU_RENAME, function() askRename(row) end)
         local moveMenu = menu:CreateButton(L.MENU_MOVE)
         local targets = View.moveTargets(Notes4EverDB, Notes4EverCharDB, row.table, row.id, labels())
         for _, target in ipairs(targets or {}) do

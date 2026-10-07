@@ -48,7 +48,7 @@ read_globals = {
     SlashCmdList = { fields = { NOTES4EVER = { read_only = false } } },
     StaticPopupDialogs = { fields = {
         NOTES4EVER_DELETE = { read_only = false },
-        NOTES4EVER_RENAME = { read_only = false },
+        NOTES4EVER_NAME = { read_only = false },
     } },
 }
 
