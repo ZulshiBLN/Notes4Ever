@@ -14,4 +14,8 @@ Locales\enUS.lua
 Locales\deDE.lua
 Model.lua
 Storage.lua
+View.lua
+Skin.lua
+Skins\Blizzard.lua
+UI\Window.lua
 Core.lua

@@ -33,7 +33,7 @@ frame:SetScript("OnEvent", function(_, event, name)
 end)
 
 local function rootStatus(label, db)
-    return L.STATUS_ROOT:format(label, db.schemaVersion,
+    return L.STATUS_ROOT:format(label, Storage.count(db), db.schemaVersion,
         date("%Y-%m-%d %H:%M:%S", db.root.created), db.loads, #(db.recovery or {}))
 end
 
@@ -47,7 +47,9 @@ SLASH_NOTES4EVER1 = "/n4e"
 SLASH_NOTES4EVER2 = "/notes"
 SlashCmdList.NOTES4EVER = function(input)
     local command = strtrim(input or ""):lower()
-    if command == "" or command == "status" then
+    if command == "" then
+        ns.Window.Toggle()
+    elseif command == "status" then
         ns.PrintStatus()
     else
         print(L.USAGE:format(addonName))
@@ -56,5 +58,5 @@ end
 
 -- Named in the TOC's AddonCompartmentFunc, so it has to be a global.
 function Notes4Ever_OnAddonCompartmentClick()
-    ns.PrintStatus()
+    ns.Window.Toggle()
 end

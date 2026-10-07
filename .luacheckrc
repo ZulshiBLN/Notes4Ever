@@ -18,14 +18,18 @@ globals = {
 -- reported instead of trusted. SlashCmdList and StaticPopupDialogs are shared
 -- by every addon; only our own entries may be written.
 read_globals = {
+    "ButtonFrameTemplate_HidePortrait",
     "C_AddOns",
     "CreateFrame",
     "GetLocale",
+    "UIParent",
+    "UISpecialFrames",
     "UnitGUID",
     "date",
     "issecretvalue",
     "strtrim",
     "time",
+    "tinsert",
     SlashCmdList = { fields = { NOTES4EVER = { read_only = false } } },
     StaticPopupDialogs = { fields = { NOTES4EVER_DELETE = { read_only = false } } },
 }
