@@ -1,28 +1,15 @@
--- Locale files run as the client runs them: with the addon's name and the
--- shared namespace as arguments, GetLocale answering for the client. Keys
--- are read from enUS.lua, the authority, never retyped here.
+-- Locale files run as the client runs them, with GetLocale answering for the
+-- client. Keys are read from enUS.lua, the authority, never retyped here.
 
-local function readFile(path)
-    local f = assert(io.open(path, "rb"))
-    local text = f:read("*a")
-    f:close()
-    return text
-end
-
-local function runLocale(source, name, ns, clientLocale)
-    local chunk = assert(loadstring(source, name))
-    setfenv(chunk, setmetatable({
-        GetLocale = function() return clientLocale end,
-    }, { __index = _G }))
-    chunk("Notes4Ever", ns)
-end
+local addon = require("addon")
 
 -- Loads enUS and then deDE, as the TOC orders them, and returns the
 -- namespace. A changed deDE source can be passed in.
 local function load(clientLocale, deDESource)
     local ns = {}
-    runLocale(readFile("Notes4Ever/Locales/enUS.lua"), "enUS", ns, clientLocale)
-    runLocale(deDESource or readFile("Notes4Ever/Locales/deDE.lua"), "deDE", ns, clientLocale)
+    local env = { GetLocale = function() return clientLocale end }
+    addon.load("Notes4Ever/Locales/enUS.lua", ns, env)
+    addon.run(deDESource or addon.read("Notes4Ever/Locales/deDE.lua"), "deDE", ns, env)
     return ns
 end
 
@@ -50,7 +37,7 @@ describe("locales", function()
     end)
 
     it("falls back to English for a key German lacks", function()
-        local source = readFile("Notes4Ever/Locales/deDE.lua")
+        local source = addon.read("Notes4Ever/Locales/deDE.lua")
         local key = next(load("enUS").L_enUS)
         local withoutKey, removed = source:gsub("\n%s*" .. key .. "%s*=[^\n]*", "")
         assert.are.equal(1, removed, "test copy should lose exactly " .. key)
