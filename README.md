@@ -23,7 +23,7 @@ too. Escape closes it; drag it to move it, and the corner grip to resize it.
 The window's left side lists **Account notes** and **Character notes**. Click
 a folder to open or close it. Right-click a row for:
 
-- **New folder** / **New page** — inside the clicked folder; you name it at once
+- **New folder** / **New page** — inside the clicked folder; you name it first, and Cancel creates nothing
 - **Rename**
 - **Move to** — any folder of either set; moving between account and
   character notes takes the whole subtree along
