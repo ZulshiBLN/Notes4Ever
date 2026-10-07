@@ -37,7 +37,10 @@ read_globals = {
     "time",
     "tinsert",
     SlashCmdList = { fields = { NOTES4EVER = { read_only = false } } },
-    StaticPopupDialogs = { fields = { NOTES4EVER_DELETE = { read_only = false } } },
+    StaticPopupDialogs = { fields = {
+        NOTES4EVER_DELETE = { read_only = false },
+        NOTES4EVER_RENAME = { read_only = false },
+    } },
 }
 
 -- Every addon file opens with `local addonName, ns = ...` (code.md), whether

@@ -63,6 +63,7 @@ describe(".luacheckrc", function()
             'SLASH_NOTES4EVER1 = "/n4e"',
             "SlashCmdList.NOTES4EVER = print",
             "StaticPopupDialogs.NOTES4EVER_DELETE = {}",
+            "StaticPopupDialogs.NOTES4EVER_RENAME = {}",
             "function Notes4Ever_OnAddonCompartmentClick() end",
         }, "\n") .. "\n"
         assert.are.equal(0, warningsFor(allowed))
