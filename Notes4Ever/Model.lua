@@ -104,25 +104,27 @@ local function countNodes(node)
 end
 
 -- A copy of the subtree for another table: every id drawn fresh from that
--- table's counter, everything else kept.
-local function copyInto(db, node)
+-- table's counter, everything else kept. `ids` records each old id's new one.
+local function copyInto(db, node, ids)
     local copy = {}
     for k, v in pairs(node) do
         if k ~= "children" then copy[k] = v end
     end
     copy.id = newId(db)
+    ids[node.id] = copy.id
     if node.children then
         copy.children = {}
-        for i, child in ipairs(node.children) do copy.children[i] = copyInto(db, child) end
+        for i, child in ipairs(node.children) do copy.children[i] = copyInto(db, child, ids) end
     end
     return copy
 end
 
 -- Moves a node, with its subtree, under a folder in the same or the other
 -- table, and returns the node now in place: the same node within a table,
--- its copy with fresh ids across tables. The node is inserted at the target
--- before it is removed from the source, so a refusal at the target leaves
--- the source as it was.
+-- its copy with fresh ids across tables - then also a map from each old id
+-- in the subtree to its new one. The node is inserted at the target before
+-- it is removed from the source, so a refusal at the target leaves the
+-- source as it was.
 function Model.move(fromDb, id, toDb, toParentId, now)
     local node, parent = Model.find(fromDb, id)
     if not node then return nil, "not_found" end
@@ -131,12 +133,13 @@ function Model.move(fromDb, id, toDb, toParentId, now)
     local target, err = folderIn(toDb, toParentId)
     if not target then return nil, err end
 
-    local moved
+    local moved, ids
     if fromDb == toDb then
         if contains(node, target) then return nil, "into_own_subtree" end
         moved = node
     else
-        moved = copyInto(toDb, node)
+        ids = {}
+        moved = copyInto(toDb, node, ids)
     end
     moved.modified = now
 
@@ -144,7 +147,7 @@ function Model.move(fromDb, id, toDb, toParentId, now)
     -- Within one folder the node now sits twice; detach drops the first,
     -- which leaves it moved to the end.
     detach(parent, node)
-    return moved
+    return moved, ids
 end
 
 -- Removes a node and its subtree; returns how many nodes went.

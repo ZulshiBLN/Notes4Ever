@@ -161,6 +161,30 @@ describe("Model", function()
             assert.are.equal(page, Model.move(db, page.id, db, folder.id, NOW))
         end)
 
+        -- An editor showing a page deep inside a moved folder must find that
+        -- page again; across tables every id in the subtree changes.
+        it("comes with each old id's new id when the subtree changes tables", function()
+            local account, character = Model.newTable(NOW), Model.newTable(NOW)
+            for i = 1, 3 do Model.create(character, character.root.id, "page", "pad " .. i, NOW) end
+            local folder = Model.create(account, account.root.id, "folder", "f", NOW)
+            local inner = Model.create(account, folder.id, "folder", "inner", NOW)
+            local page = Model.create(account, inner.id, "page", "deep", NOW)
+            Model.setText(account, page.id, "keep", NOW)
+
+            local _, ids = Model.move(account, folder.id, character, character.root.id, NOW)
+            assert.are.equal("keep", Model.find(character, ids[page.id]).text)
+            assert.are.equal("inner", Model.find(character, ids[inner.id]).title)
+            assert.are.equal("f", Model.find(character, ids[folder.id]).title)
+        end)
+
+        it("comes with no id changes within a table", function()
+            local db = Model.newTable(NOW)
+            local folder = Model.create(db, db.root.id, "folder", "f", NOW)
+            local page = Model.create(db, db.root.id, "page", "p", NOW)
+            local _, ids = Model.move(db, page.id, db, folder.id, NOW)
+            assert.is_nil(ids)
+        end)
+
         it("is the copy in the target table across tables", function()
             local account, character = Model.newTable(NOW), Model.newTable(NOW)
             Model.create(character, character.root.id, "page", "taking an id", NOW)
