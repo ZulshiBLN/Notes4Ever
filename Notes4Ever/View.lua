@@ -24,6 +24,50 @@ local function finite(value)
     end
 end
 
+-- Rows of the tree --------------------------------------------------------
+
+-- Ids are unique per table, not across them, so a row's key carries both.
+local function keyOf(tableName, id)
+    return tableName .. ":" .. id
+end
+
+-- `expanded` holds what the player opened or closed, by row key. Anything
+-- not in it takes the default: roots open, folders closed.
+local function isExpanded(expanded, key, isRoot)
+    local state = expanded[key]
+    if state == nil then return isRoot end
+    return state
+end
+
+-- The tree as the window shows it: both roots, account first, each followed
+-- by its visible notes in stored order with their depth. A collapsed folder
+-- hides its whole subtree. `labels` gives the roots' titles.
+function View.rows(account, character, expanded, labels)
+    local rows = {}
+    local function add(tableName, node, depth, isRoot)
+        local key = keyOf(tableName, node.id)
+        local hasChildren = node.children ~= nil and #node.children > 0
+        local open = hasChildren and isExpanded(expanded, key, isRoot)
+        rows[#rows + 1] = {
+            key = key, table = tableName, id = node.id, kind = node.kind,
+            title = isRoot and labels[tableName] or node.title,
+            depth = depth, isRoot = isRoot,
+            hasChildren = hasChildren, expanded = open,
+        }
+        if open then
+            for _, child in ipairs(node.children) do add(tableName, child, depth + 1, false) end
+        end
+    end
+    add("account", account.root, 0, true)
+    add("character", character.root, 0, true)
+    return rows
+end
+
+-- Opens a closed row or closes an open one.
+function View.toggle(expanded, row)
+    expanded[row.key] = not isExpanded(expanded, row.key, row.isRoot)
+end
+
 -- The stored window geometry, made safe to apply. Whatever is missing or
 -- malformed takes its default - the field is a convenience and is never
 -- trusted - and a size below the minimum is raised to it.
