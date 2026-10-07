@@ -12,6 +12,7 @@ ns.Tree = Tree
 local ROW_HEIGHT = 20
 local INDENT = 14
 local EXPANDER_SIZE = 14
+local ICON_SIZE = 14
 
 -- What the player has opened or closed, and the selected page as
 -- { table = , id = }. Per session: the tree opens with roots open and
@@ -75,6 +76,9 @@ local function initRow(button, row)
     if not button.label then
         button.expander = button:CreateTexture(nil, "ARTWORK")
         button.expander:SetSize(EXPANDER_SIZE, EXPANDER_SIZE)
+        -- Folder or page at a glance: an empty folder has no expander.
+        button.icon = button:CreateTexture(nil, "ARTWORK")
+        button.icon:SetSize(ICON_SIZE, ICON_SIZE)
         button.selection = button:CreateTexture(nil, "BACKGROUND")
         button.selection:SetAllPoints()
         button.label = button:CreateFontString(nil, "OVERLAY")
@@ -89,7 +93,13 @@ local function initRow(button, row)
     button.expander:SetShown(row.hasChildren)
     button.selection:SetShown(isSelected(row))
     button.label:ClearAllPoints()
-    button.label:SetPoint("LEFT", left + EXPANDER_SIZE + 4, 0)
+    -- Roots carry no icon; their label says what they are.
+    local textLeft = left + EXPANDER_SIZE + 4
+    button.icon:ClearAllPoints()
+    button.icon:SetPoint("LEFT", textLeft, 0)
+    button.icon:SetShown(not row.isRoot)
+    if not row.isRoot then textLeft = textLeft + ICON_SIZE + 4 end
+    button.label:SetPoint("LEFT", textLeft, 0)
     button.label:SetPoint("RIGHT", -4, 0)
 
     -- The skin sets the font, so it comes before the text.

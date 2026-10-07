@@ -17,6 +17,11 @@ ns.Skin:Register("Blizzard", {
         button.expander:SetTexture(row.expanded
             and "Interface\\Buttons\\UI-MinusButton-Up"
             or "Interface\\Buttons\\UI-PlusButton-Up")
+        button.icon:SetTexture(row.kind == "folder"
+            and "Interface\\Icons\\INV_Misc_Bag_07"
+            or "Interface\\Icons\\INV_Misc_Note_01")
+        -- Item icons carry a border; trimming it keeps them crisp at 14px.
+        button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         button.selection:SetColorTexture(1, 0.82, 0, 0.15)
         button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     end,

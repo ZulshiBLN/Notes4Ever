@@ -13,7 +13,8 @@ Checked in game on WoW: Forever 1.60.1.70245 (interface 16001).
 - The notebook window: `/n4e`, `/notes` or the AddOn compartment entry open
   and close it, Escape closes it. It can be moved and resized and comes back
   where it was left.
-- The tree on the window's left shows account and character notes; folders
+- The tree on the window's left shows account and character notes, each folder
+  and page marked by its own icon; folders
   open and close on click. Right-click a row for new folder, new page,
   rename, move to any folder of either set, and delete - which first asks,
   naming how many folders and pages go.
