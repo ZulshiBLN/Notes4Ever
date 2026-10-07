@@ -9,6 +9,9 @@ All notable changes to Notes4Ever. The format follows
 ### Added
 
 - `/n4e status` (or `/notes`) and the AddOn compartment entry print the addon's
-  version and whether account and character notes are stored.
+  version and, for account and character notes, the schema, when they were
+  created, how often they were loaded and how many unreadable sets are kept.
+- Saved notes that cannot be read are never overwritten: they are kept for
+  recovery, and every login says so and how to secure the game's backup file.
 - German texts on a German client; anything not yet translated shows in
   English.

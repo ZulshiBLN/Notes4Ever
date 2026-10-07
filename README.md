@@ -12,7 +12,7 @@ professions, routes, to-do lists — without leaving the game.
 
 | Command | Does |
 |---|---|
-| `/n4e status` or `/notes` | prints the version and whether account and character notes are stored |
+| `/n4e status` or `/notes` | prints the version and, for account and character notes, schema, creation time, load count and how many unreadable sets are kept |
 
 The AddOn compartment entry (the button beside the minimap) does the same.
 

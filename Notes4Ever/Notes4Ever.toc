@@ -12,4 +12,6 @@
 
 Locales\enUS.lua
 Locales\deDE.lua
+Model.lua
+Storage.lua
 Core.lua

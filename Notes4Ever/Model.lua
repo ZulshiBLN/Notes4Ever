@@ -15,6 +15,7 @@ ns.Model = Model
 Model.SCHEMA_VERSION = 1
 
 local KINDS = { folder = true, page = true }
+Model.KINDS = KINDS
 
 local function newId(db)
     local id = db.nextId

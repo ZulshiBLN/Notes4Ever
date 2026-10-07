@@ -1,19 +1,46 @@
 local addonName, ns = ...
 
-local L = ns.L
+local L, Storage = ns.L, ns.Storage
 
 -- Read from the TOC rather than repeated here: the version lives in one place.
 local version = C_AddOns.GetAddOnMetadata(addonName, "Version")
 
--- SavedVariables are only filled in once the client has loaded this addon, so
--- they are looked at when the status is asked for, never at file scope.
-local function stateOf(saved)
-    return saved and L.STATE_STORED or L.STATE_NONE
+-- Whether each SavedVariable arrived empty, noted at ADDON_LOADED and used at
+-- PLAYER_LOGIN, when the character's GUID is known.
+local arrived = {}
+
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:SetScript("OnEvent", function(_, event, name)
+    if event == "ADDON_LOADED" and name == addonName then
+        -- The client has just filled the SavedVariables; this is the first
+        -- moment they can be read, and the only place they are replaced.
+        arrived.accountArrivedNil = Notes4EverDB == nil
+        arrived.characterArrivedNil = Notes4EverCharDB == nil
+        Notes4EverDB = Storage.load(Notes4EverDB, time())
+        Notes4EverCharDB = Storage.load(Notes4EverCharDB, time())
+    elseif event == "PLAYER_LOGIN" then
+        -- Unit identity may be a secret value on Forever; a secret cannot be
+        -- a table key, so such a login records no count.
+        local guid = UnitGUID("player")
+        if issecretvalue and issecretvalue(guid) then guid = nil end
+        Storage.reconcile(Notes4EverDB, Notes4EverCharDB, guid, time(), arrived)
+        for _, message in ipairs(Storage.warnings(Notes4EverDB, Notes4EverCharDB, L)) do
+            print(message)
+        end
+    end
+end)
+
+local function rootStatus(label, db)
+    return L.STATUS_ROOT:format(label, db.schemaVersion,
+        date("%Y-%m-%d %H:%M:%S", db.root.created), db.loads, #(db.recovery or {}))
 end
 
 function ns.PrintStatus()
-    print(L.STATUS_LINE:format(addonName, version,
-        stateOf(Notes4EverDB), stateOf(Notes4EverCharDB)))
+    print(L.STATUS_HEADER:format(addonName, version))
+    print(rootStatus(L.ROOT_ACCOUNT, Notes4EverDB))
+    print(rootStatus(L.ROOT_CHARACTER, Notes4EverCharDB))
 end
 
 SLASH_NOTES4EVER1 = "/n4e"

@@ -19,8 +19,13 @@ globals = {
 -- our own entry may be written.
 read_globals = {
     "C_AddOns",
+    "CreateFrame",
     "GetLocale",
+    "UnitGUID",
+    "date",
+    "issecretvalue",
     "strtrim",
+    "time",
     SlashCmdList = { fields = { NOTES4EVER = { read_only = false } } },
 }
 
