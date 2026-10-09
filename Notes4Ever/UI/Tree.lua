@@ -113,7 +113,8 @@ end
 
 function Tree.Create(parent)
     scrollBox = CreateFrame("Frame", nil, parent, "WowScrollBoxList")
-    local scrollBar = CreateFrame("EventFrame", nil, parent, "MinimalScrollBar")
+    local scrollBar = Skin:Apply("scrollBar",
+        CreateFrame("EventFrame", nil, parent, "MinimalScrollBar"))
     scrollBox:SetPoint("TOPLEFT", 4, -4)
     scrollBox:SetPoint("BOTTOMLEFT", 4, 4)
     scrollBox:SetWidth(Tree.WIDTH)

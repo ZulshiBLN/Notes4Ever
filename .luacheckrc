@@ -35,6 +35,7 @@ read_globals = {
     "GameFontHighlightSmall",
     "GameFontNormal",
     "GetLocale",
+    "geterrorhandler",
     "ScrollBoxConstants",
     "ScrollUtil",
     "UIParent",
