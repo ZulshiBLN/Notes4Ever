@@ -40,9 +40,24 @@ local function newFacade(calls)
     return S
 end
 
--- A text region whose colour is what the base set.
-local function text(name, r, g, b)
-    return { name = name, GetTextColor = function() return r, g, b, 1 end }
+-- A text region the base gave the font object with colour r, g, b - but
+-- still carrying the explicit size and gold of a root row it was before,
+-- as a recycled row does: on the client SetFontObject does not reset an
+-- explicit SetFont or SetTextColor (probed on build 70245). The region logs
+-- into `calls` like the facade, so the order shows.
+local function text(calls, name, r, g, b)
+    local object = {
+        GetFont = function() return "base.ttf", 10, "" end,
+        GetTextColor = function() return r, g, b, 1 end,
+    }
+    return {
+        name = name,
+        GetFontObject = function() return object end,
+        GetTextColor = function() return 1, 0.82, 0, 1 end,
+        SetFont = function(_, path, size)
+            calls[#calls + 1] = table.concat({ "SetFont", name, path, size }, ":")
+        end,
+    }
 end
 
 describe("EllesmereUI adapter", function()
@@ -93,21 +108,25 @@ describe("EllesmereUI adapter", function()
             assert.are.same({ "ScrollBar:bar" }, calls)
         end)
 
-        it("re-fonts a row's label in the colour the base gave it, the selection in the accent", function()
+        it("re-fonts a reused row at its base font's size and colour, the selection in the accent", function()
             local colour
             local button = {
-                label = text("label", 1, 0.82, 0),
+                label = text(calls, "label", 1, 1, 1),
                 selection = { SetColorTexture = function(_, r, g, b) colour = { r, g, b } end },
             }
-            overlay.treeRow(button, { isRoot = true })
-            assert.are.same({ "Font:label:1:0.82:0" }, calls)
+            overlay.treeRow(button, { isRoot = false })
+            -- The size reset comes first: S.Font keeps whatever size it finds.
+            assert.are.same({ "SetFont:label:base.ttf:10", "Font:label:1:1:1" }, calls)
             assert.are.same(ACCENT, colour)
         end)
 
-        it("re-fonts the edit box, not its scroll frame, and the hint in their colours", function()
-            overlay.editor({ name = "scrollFrame" }, text("editBox", 1, 1, 1))
-            overlay.hint(text("hint", 0.5, 0.5, 0.5))
-            assert.are.same({ "Font:editBox:1:1:1", "Font:hint:0.5:0.5:0.5" }, calls)
+        it("re-fonts the edit box, not its scroll frame, and the hint at their base fonts", function()
+            overlay.editor({ name = "scrollFrame" }, text(calls, "editBox", 1, 1, 1))
+            overlay.hint(text(calls, "hint", 0.5, 0.5, 0.5))
+            assert.are.same({
+                "SetFont:editBox:base.ttf:10", "Font:editBox:1:1:1",
+                "SetFont:hint:base.ttf:10", "Font:hint:0.5:0.5:0.5",
+            }, calls)
         end)
 
         it("leaves the resize grip to the base", function()

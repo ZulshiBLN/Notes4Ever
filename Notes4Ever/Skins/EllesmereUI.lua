@@ -12,10 +12,15 @@ if not (EllesmereUI and EllesmereUI.RegisterSkin) then return end
 
 local NAME = "EllesmereUI"
 
--- S.Font swaps the font object for EllesmereUI's, which resets the colour;
--- passing the base's colour keeps gold roots and the grey hint.
+-- S.Font sets an explicit font and colour, keeping the size it finds. On
+-- the client SetFontObject does not reset explicit values (probed on build
+-- 70245), so a recycled row would keep a root's size and gold. Size and
+-- colour are therefore read from the font object the base set: gold roots,
+-- small white rows, the grey hint.
 local function font(S, region)
-    local r, g, b = region:GetTextColor()
+    local object = region:GetFontObject()
+    region:SetFont(object:GetFont())
+    local r, g, b = object:GetTextColor()
     S.Font(region, r, g, b)
 end
 
