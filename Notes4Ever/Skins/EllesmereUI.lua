@@ -36,6 +36,15 @@ local function overlay(S)
 
         scrollBar = function(bar)
             S.ScrollBar(bar)
+            -- S.ScrollBar fades the track and arrows and draws only the thumb,
+            -- so with nothing to scroll the tree and the page ran into each
+            -- other. A faint track, the thumb's width, keeps them apart as
+            -- the Blizzard look's idle bar does.
+            local track = bar:CreateTexture(nil, "BACKGROUND")
+            track:SetColorTexture(1, 1, 1, 0.08)
+            track:SetWidth(4)
+            track:SetPoint("TOP", bar.Track)
+            track:SetPoint("BOTTOM", bar.Track)
         end,
 
         treeRow = function(button)

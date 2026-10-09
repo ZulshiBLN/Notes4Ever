@@ -43,7 +43,7 @@ end
 -- A text region the base gave the font object with colour r, g, b - but
 -- still carrying the explicit size and gold of a root row it was before,
 -- as a recycled row does: on the client SetFontObject does not reset an
--- explicit SetFont or SetTextColor (probed on build 70245). The region logs
+-- explicit SetFont or SetTextColor (probed on build 70291). The region logs
 -- into `calls` like the facade, so the order shows.
 local function text(calls, name, r, g, b)
     local object = {
@@ -103,9 +103,28 @@ describe("EllesmereUI adapter", function()
                               "CloseButton:close" }, calls)
         end)
 
-        it("gives the scroll bar EllesmereUI's", function()
-            overlay.scrollBar({ name = "bar" })
+        it("gives the scroll bar EllesmereUI's, over a faint track that stays with nothing to scroll", function()
+            local track = { name = "track" }
+            local textures = {}
+            local bar = { name = "bar", Track = track }
+            function bar.CreateTexture(_, _, layer)
+                local t = { layer = layer, points = {} }
+                function t:SetColorTexture(r, g, b, a) self.colour = { r, g, b, a } end
+                function t:SetWidth(w) self.width = w end
+                function t:SetPoint(point, relative) self.points[point] = relative end
+                textures[#textures + 1] = t
+                return t
+            end
+            overlay.scrollBar(bar)
             assert.are.same({ "ScrollBar:bar" }, calls)
+            assert.are.equal(1, #textures)
+            local t = textures[1]
+            -- EllesmereUI fades the track and draws the thumb alone; the
+            -- track must sit below it and run the track's full length.
+            assert.are.equal("BACKGROUND", t.layer)
+            assert.are.same({ TOP = track, BOTTOM = track }, t.points)
+            assert.is_true(t.width > 0)
+            assert.is_true(t.colour[4] > 0)
         end)
 
         it("re-fonts a reused row at its base font's size and colour, the selection in the accent", function()
