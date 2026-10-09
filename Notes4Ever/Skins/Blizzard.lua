@@ -34,6 +34,10 @@ ns.Skin:Register("Blizzard", {
         fontString:SetFontObject(GameFontDisable)
     end,
 
+    -- The search box: SearchBoxTemplate brings the game's art, magnifier and
+    -- font, so the base adds nothing; the role exists for an overlay.
+    searchBox = function() end,
+
     -- The export and import dialog: a ButtonFrameTemplate like the window.
     -- The fonts are set here so an overlay re-fonting them finds an object.
     dialog = function(frame, editBox, _, reason)

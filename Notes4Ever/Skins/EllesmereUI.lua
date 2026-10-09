@@ -62,6 +62,14 @@ local function overlay(S)
             font(S, fontString)
         end,
 
+        -- The search box above the tree. S.EditBox fades every texture of
+        -- the box, the magnifier with the frame art, so it is shown again.
+        searchBox = function(box)
+            S.EditBox(box)
+            if box.searchIcon then box.searchIcon:SetAlpha(1) end
+            font(S, box)
+        end,
+
         -- The export and import dialog, built like the window. Its scroll bar
         -- is styled through the scrollBar role; S.EditBox is for single-line
         -- boxes, so the multi-line box is only re-fonted, as the editor's.

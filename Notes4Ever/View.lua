@@ -41,10 +41,64 @@ local function isExpanded(expanded, key, isRoot)
     return state
 end
 
+-- Plain text, case-insensitive for A-Z: `%`, `(` and `.` in a query are
+-- literal characters, not a pattern.
+local function contains(text, query)
+    return text:lower():find(query, 1, true) ~= nil
+end
+
+-- The search's rows for `node` and its subtree, or nil if nothing in it
+-- matches. A page matches by title or text, a folder by title; below a
+-- matching folder everything shows. Every shown folder is open.
+local function searchRows(tableName, node, depth, query, inMatch)
+    local own = inMatch or contains(node.title, query)
+        or (node.kind == "page" and contains(node.text, query))
+    local below = {}
+    for _, child in ipairs(node.children or {}) do
+        local childRows = searchRows(tableName, child, depth + 1, query,
+                                     own and node.kind == "folder")
+        for _, row in ipairs(childRows or {}) do below[#below + 1] = row end
+    end
+    if not own and #below == 0 then return nil end
+    local rows = { {
+        key = keyOf(tableName, node.id), table = tableName, id = node.id, kind = node.kind,
+        title = node.title, depth = depth, isRoot = false,
+        hasChildren = #below > 0, expanded = #below > 0, searching = true,
+    } }
+    for _, row in ipairs(below) do rows[#rows + 1] = row end
+    return rows
+end
+
+-- A search leaves `expanded` alone: clearing it shows the tree as it was.
+-- Root labels are not matched; a root without matches shows closed.
+local function searchTree(account, character, labels, query)
+    local rows = {}
+    for _, root in ipairs({ { "account", account.root }, { "character", character.root } }) do
+        local tableName, node = root[1], root[2]
+        local below = {}
+        for _, child in ipairs(node.children) do
+            for _, row in ipairs(searchRows(tableName, child, 1, query, false) or {}) do
+                below[#below + 1] = row
+            end
+        end
+        rows[#rows + 1] = {
+            key = keyOf(tableName, node.id), table = tableName, id = node.id, kind = node.kind,
+            title = labels[tableName], depth = 0, isRoot = true,
+            hasChildren = #below > 0, expanded = #below > 0, searching = true,
+        }
+        for _, row in ipairs(below) do rows[#rows + 1] = row end
+    end
+    return rows
+end
+
 -- The tree as the window shows it: both roots, account first, each followed
 -- by its visible notes in stored order with their depth. A collapsed folder
--- hides its whole subtree. `labels` gives the roots' titles.
-function View.rows(account, character, expanded, labels)
+-- hides its whole subtree. `labels` gives the roots' titles. With a `query`
+-- that is not blank, only what matches it, as searchTree says.
+function View.rows(account, character, expanded, labels, query)
+    if query and query:find("%S") then
+        return searchTree(account, character, labels, query:lower())
+    end
     local rows = {}
     local function add(tableName, node, depth, isRoot)
         local key = keyOf(tableName, node.id)

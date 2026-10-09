@@ -415,3 +415,116 @@ describe("View editor", function()
         assert.are.same({ table = "account", id = page.id }, View.editorPage(editor))
     end)
 end)
+
+-- Searching the tree: View.rows with a query. The rules are in plan 3's
+-- RESEARCH, UI details, Searching.
+describe("View.rows with a query", function()
+    local View, Model
+    local NOW = 4000
+    local LABELS = { account = "Account notes", character = "Character notes" }
+
+    before_each(function()
+        local ns = {}
+        addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/View.lua", ns)
+        View, Model = ns.View, ns.Model
+    end)
+
+    local function titles(rows)
+        local out = {}
+        for i, row in ipairs(rows) do out[i] = string.rep("  ", row.depth) .. row.title end
+        return out
+    end
+
+    local function page(db, parentId, title, text)
+        local node = Model.create(db, parentId, "page", title, NOW)
+        Model.setText(db, node.id, text, NOW)
+        return node
+    end
+
+    -- Account: Dungeons/ { Deadmines "VanCleef", Stockade "Hogger" },
+    -- Recipes/ { Bread "flour" }, Pipes "a||b" (as the edit box stores a
+    -- typed a|b), Spaced "a b", Paren "(x", Literal "%(.";
+    -- Character: Bank "gold".
+    local function tree()
+        local account, character = Model.newTable(NOW), Model.newTable(NOW)
+        local dungeons = Model.create(account, account.root.id, "folder", "Dungeons", NOW)
+        page(account, dungeons.id, "Deadmines", "VanCleef")
+        page(account, dungeons.id, "Stockade", "Hogger")
+        local recipes = Model.create(account, account.root.id, "folder", "Recipes", NOW)
+        page(account, recipes.id, "Bread", "flour")
+        page(account, account.root.id, "Pipes", "a||b")
+        page(account, account.root.id, "Spaced", "a b")
+        page(account, account.root.id, "Paren", "(x")
+        page(account, account.root.id, "Literal", "%(.")
+        page(character, character.root.id, "Bank", "gold")
+        return account, character
+    end
+
+    local function search(query, expanded)
+        local account, character = tree()
+        return View.rows(account, character, expanded or {}, LABELS, query)
+    end
+
+    it("finds a page by title, with its folders open", function()
+        assert.are.same({ "Account notes", "  Dungeons", "    Deadmines", "Character notes" },
+                        titles(search("Deadmines")))
+        local rows = search("Deadmines")
+        assert.is_true(rows[1].expanded)
+        assert.is_true(rows[2].expanded)
+    end)
+
+    it("finds a page by its text, in another case", function()
+        assert.are.same({ "Account notes", "  Dungeons", "    Stockade", "Character notes" },
+                        titles(search("hOGGER")))
+    end)
+
+    it("finds a folder by title, with its whole subtree", function()
+        assert.are.same({ "Account notes", "  Dungeons", "    Deadmines", "    Stockade",
+                          "Character notes" },
+                        titles(search("dungeon")))
+    end)
+
+    it("finds a page storing a||b by the query a||b, not one storing a b", function()
+        assert.are.same({ "Account notes", "  Pipes", "Character notes" }, titles(search("a||b")))
+    end)
+
+    it("matches %(. only literally, and does not find (x by it", function()
+        assert.are.same({ "Account notes", "  Literal", "Character notes" }, titles(search("%(.")))
+    end)
+
+    it("matches the query as typed, untrimmed", function()
+        assert.are.same({ "Account notes", "  Spaced", "Character notes" }, titles(search(" b")))
+    end)
+
+    it("shows a root without matches closed, with no rows under it", function()
+        local rows = search("gold")
+        assert.are.same({ "Account notes", "Character notes", "  Bank" }, titles(rows))
+        assert.is_false(rows[1].expanded)
+        assert.is_false(rows[1].hasChildren)
+        assert.is_true(rows[2].expanded)
+    end)
+
+    it("does not match the roots' labels", function()
+        assert.are.same({ "Account notes", "Character notes" }, titles(search("notes")))
+    end)
+
+    it("marks its rows, so a folder click changes nothing", function()
+        for _, row in ipairs(search("Dead")) do assert.is_true(row.searching) end
+        local account, character = tree()
+        for _, row in ipairs(View.rows(account, character, {}, LABELS)) do assert.is_nil(row.searching) end
+    end)
+
+    it("gives today's rows for an empty or all-space query, and leaves expand state alone", function()
+        local account, character = tree()
+        local expanded = { [View.key("account", account.root.children[2].id)] = true }
+        local before = {}
+        for k, v in pairs(expanded) do before[k] = v end
+        local today = View.rows(account, character, expanded, LABELS)
+        for _, query in ipairs({ "", "   ", "\t" }) do
+            assert.are.same(today, View.rows(account, character, expanded, LABELS, query))
+        end
+        View.rows(account, character, expanded, LABELS, "Dead")
+        assert.are.same(before, expanded)
+    end)
+end)

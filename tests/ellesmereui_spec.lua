@@ -165,6 +165,18 @@ describe("EllesmereUI adapter", function()
             }, calls)
         end)
 
+        -- S.EditBox fades every texture of the box, the magnifier too; the
+        -- overlay shows it again, and re-fonts the box at its base font.
+        it("gives the search box the suite's edit box, keeps its magnifier, re-fonts it", function()
+            local alpha
+            local box = text(calls, "search", 1, 1, 1)
+            box.searchIcon = { SetAlpha = function(_, a) alpha = a end }
+            overlay.searchBox(box)
+            assert.are.same({ "EditBox:search", "SetFont:search:base.ttf:10", "Font:search:1:1:1" },
+                            calls)
+            assert.are.equal(1, alpha)
+        end)
+
         it("leaves the resize grip to the base", function()
             assert.is_nil(overlay.resizeGrip)
         end)

@@ -20,6 +20,8 @@ Tree.WIDTH = 220
 -- folders closed.
 local expanded = {}
 local selected
+-- What the search box holds; View.rows treats a blank query as none.
+local query
 
 local scrollBox
 
@@ -29,7 +31,7 @@ end
 
 local function currentRows()
     return View.rows(Notes4EverDB, Notes4EverCharDB, expanded,
-        { account = L.ROOT_ACCOUNT, character = L.ROOT_CHARACTER })
+        { account = L.ROOT_ACCOUNT, character = L.ROOT_CHARACTER }, query)
 end
 
 function Tree.Refresh()
@@ -66,7 +68,9 @@ local function onClick(button, mouseButton)
         ns.Actions.ShowMenu(button, row)
         return
     end
-    if row.hasChildren then View.toggle(expanded, row) end
+    -- During a search every shown folder is open; a click must not change
+    -- what the tree shows once the search is cleared.
+    if row.hasChildren and not row.searching then View.toggle(expanded, row) end
     if row.kind == "page" then
         Tree.Select(row.table, row.id)
         ns.Editor.Open(row.table, row.id)
@@ -111,11 +115,27 @@ local function initRow(button, row)
     button.label:SetText(row.title)
 end
 
+-- Typed text is written first, so a page is found by what was just typed.
+local function onSearch(box)
+    query = box:GetText()
+    ns.Editor.Flush()
+    Tree.Refresh()
+end
+
 function Tree.Create(parent)
+    -- A new edit box takes the keyboard at once (code.md): this one only
+    -- when clicked, and gives it back on Escape.
+    local searchBox = Skin:Apply("searchBox", CreateFrame("EditBox", nil, parent, "SearchBoxTemplate"))
+    searchBox:SetAutoFocus(false)
+    searchBox:SetSize(Tree.WIDTH - 6, 20)
+    searchBox:SetPoint("TOPLEFT", 10, -4)
+    searchBox:HookScript("OnTextChanged", onSearch)
+    searchBox:HookScript("OnEscapePressed", searchBox.ClearFocus)
+
     scrollBox = CreateFrame("Frame", nil, parent, "WowScrollBoxList")
     local scrollBar = Skin:Apply("scrollBar",
         CreateFrame("EventFrame", nil, parent, "MinimalScrollBar"))
-    scrollBox:SetPoint("TOPLEFT", 4, -4)
+    scrollBox:SetPoint("TOPLEFT", 4, -28)
     scrollBox:SetPoint("BOTTOMLEFT", 4, 4)
     scrollBox:SetWidth(Tree.WIDTH)
     scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 4, 0)
