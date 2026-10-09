@@ -36,9 +36,22 @@ describe("locales", function()
         end
     end)
 
+    -- The key to drop must sit on one line of deDE.lua: removing the first
+    -- line of a value that continues with `..` leaves code that does not
+    -- compile. Sorted, so the choice does not hang on next()'s hash order.
+    local function singleLineKey(source, keys)
+        local sorted = {}
+        for key in pairs(keys) do sorted[#sorted + 1] = key end
+        table.sort(sorted)
+        for _, key in ipairs(sorted) do
+            if source:find("\n%s*" .. key .. "%s*=%s*\"[^\n]*\",[ \t]*\r?\n") then return key end
+        end
+    end
+
     it("falls back to English for a key German lacks", function()
         local source = addon.read("Notes4Ever/Locales/deDE.lua")
-        local key = next(load("enUS").L_enUS)
+        local key = singleLineKey(source, load("enUS").L_enUS)
+        assert.is_string(key, "deDE.lua should have a key on a single line")
         local withoutKey, removed = source:gsub("\n%s*" .. key .. "%s*=[^\n]*", "")
         assert.are.equal(1, removed, "test copy should lose exactly " .. key)
 
