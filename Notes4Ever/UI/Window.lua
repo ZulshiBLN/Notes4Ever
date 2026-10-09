@@ -51,7 +51,7 @@ local function build()
 
     -- Resized by hand rather than StartSizing, which moved the corner to the
     -- cursor - under EllesmereUI each click on the grip changed the size
-    -- (plan 2, build 70245). The size follows the cursor's movement only.
+    -- (plan 2, build 70291). The size follows the cursor's movement only.
     local grip = CreateFrame("Button", nil, frame)
     grip:SetSize(16, 16)
     grip:SetPoint("BOTTOMRIGHT", -4, 4)
