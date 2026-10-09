@@ -59,7 +59,7 @@ end)
 
 -- Resizing from the grip: the size follows the cursor's movement since the
 -- grip was pressed, never its position - with StartSizing the corner jumped
--- to the cursor under EllesmereUI (plan 2, in game on 70245).
+-- to the cursor under EllesmereUI (plan 2, in game on 70291).
 describe("View.dragSize", function()
     local View
 

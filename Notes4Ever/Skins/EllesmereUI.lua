@@ -14,7 +14,7 @@ local NAME = "EllesmereUI"
 
 -- S.Font sets an explicit font and colour, keeping the size it finds. On
 -- the client SetFontObject does not reset explicit values (probed on build
--- 70245), so a recycled row would keep a root's size and gold. Size and
+-- 70291), so a recycled row would keep a root's size and gold. Size and
 -- colour are therefore read from the font object the base set: gold roots,
 -- small white rows, the grey hint.
 local function font(S, region)
