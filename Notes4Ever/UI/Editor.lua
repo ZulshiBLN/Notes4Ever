@@ -77,8 +77,12 @@ function Editor.Create(parent, left)
     editBox:HookScript("OnEscapePressed", editBox.ClearFocus)
     Skin:Apply("editor", frame, editBox)
 
+    -- Held between the editor's sides so it wraps: anchored by its centre
+    -- alone it ran past the window at the minimum size.
     hint = parent:CreateFontString(nil, "OVERLAY")
-    hint:SetPoint("CENTER", frame, "CENTER")
+    hint:SetPoint("LEFT", frame, "LEFT", 12, 0)
+    hint:SetPoint("RIGHT", frame, "RIGHT", -12, 0)
+    hint:SetJustifyH("CENTER")
     Skin:Apply("hint", hint)
     hint:SetText(L.EDITOR_HINT)
 
