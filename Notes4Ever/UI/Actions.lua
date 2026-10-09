@@ -1,6 +1,6 @@
 local addonName, ns = ...
 
-local L, Model, View, Transfer = ns.L, ns.Model, ns.View, ns.Transfer
+local L, Model, View, Transfer, Storage = ns.L, ns.Model, ns.View, ns.Transfer, ns.Storage
 
 -- The tree's right-click menu and the two dialogs behind it: new folder or
 -- page, rename, move, delete. What is allowed - move targets, what a delete
@@ -60,8 +60,14 @@ StaticPopupDialogs.NOTES4EVER_NAME = {
     end,
 }
 
+-- The confirmation for delete and discard: two lines the caller passes.
+-- A layout with no words to translate, so not an L key - locales_spec
+-- wants every key to read differently in German.
+local CONFIRM_LINES = "%s\n%s"
+
+-- `data.apply` does the change, so Cancel and Escape change nothing.
 StaticPopupDialogs.NOTES4EVER_DELETE = {
-    text = L.DELETE_CONFIRM,
+    text = CONFIRM_LINES,
     button1 = YES,
     button2 = NO,
     showAlert = true,
@@ -69,10 +75,7 @@ StaticPopupDialogs.NOTES4EVER_DELETE = {
     whileDead = true,
     hideOnEscape = true,
     OnAccept = function(_, data)
-        ns.Editor.Flush()
-        Model.delete(tables()[data.table], data.id)
-        -- If the open page went with it, this flush finds it gone and closes.
-        ns.Editor.Flush()
+        data.apply()
         ns.Tree.Refresh()
     end,
 }
@@ -119,9 +122,48 @@ local function confirmDelete(row)
     ns.Editor.Flush()
     local summary = View.deleteSummary(tables()[row.table], row.id)
     if not summary then return end
-    StaticPopup_Show("NOTES4EVER_DELETE", summary.title,
-        L.DELETE_COUNTS:format(summary.folders, summary.pages),
-        { table = row.table, id = row.id })
+    StaticPopup_Show("NOTES4EVER_DELETE", L.DELETE_CONFIRM:format(summary.title),
+        L.DELETE_COUNTS:format(summary.folders, summary.pages), {
+        apply = function()
+            ns.Editor.Flush()
+            Model.delete(tables()[row.table], row.id)
+            -- If the open page went with it, this flush finds it gone and closes.
+            ns.Editor.Flush()
+        end,
+    })
+end
+
+-- Recovery entries, on the root of their table ---------------------------
+
+local function restore(row, entry, when)
+    ns.Editor.Flush()
+    -- A refusal can only come from the list changing under an open menu;
+    -- the refresh shows it as it now is.
+    Storage.restore(tables()[row.table], entry, L.RESTORED_TITLE:format(when), L.UNTITLED, time())
+    ns.Tree.Expand(row.table, row.id)
+    ns.Tree.Refresh()
+end
+
+local function confirmDiscard(row, entry, when, reason, final)
+    StaticPopup_Show("NOTES4EVER_DELETE", L.DISCARD_CONFIRM:format(when, reason), final, {
+        apply = function() Storage.discard(tables()[row.table], entry) end,
+    })
+end
+
+-- In stored order, as the warning counts them; Restore only where the data
+-- can come back, Discard for every entry.
+local function addRecovery(menu, row)
+    local db = tables()[row.table]
+    if Storage.recoveryCount(db) == 0 then return end
+    local recoveryMenu = menu:CreateButton(L.MENU_RECOVERY)
+    for _, entry in ipairs(db.recovery) do
+        local when, reason, final = Storage.describe(entry, L, date)
+        local item = recoveryMenu:CreateButton(when .. " - " .. reason)
+        if Storage.restorable(entry) then
+            item:CreateButton(L.MENU_RESTORE, function() restore(row, entry, when) end)
+        end
+        item:CreateButton(L.MENU_DISCARD, function() confirmDiscard(row, entry, when, reason, final) end)
+    end
 end
 
 -- Text typed within the save pause belongs in the export.
@@ -141,7 +183,10 @@ function Actions.ShowMenu(owner, row)
         -- An empty root has nothing to export; parse would refuse its export.
         local exportButton = menu:CreateButton(L.MENU_EXPORT, function() export(row) end)
         if row.isRoot and not row.hasChildren then exportButton:SetEnabled(false) end
-        if row.isRoot then return end
+        if row.isRoot then
+            addRecovery(menu, row)
+            return
+        end
 
         menu:CreateButton(L.MENU_RENAME, function() askRename(row) end)
         local moveMenu = menu:CreateButton(L.MENU_MOVE)

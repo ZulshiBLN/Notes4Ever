@@ -4,7 +4,11 @@ local addonName, ns = ...
 -- with its own table and falls back to this one per key, so a string it has
 -- not translated yet shows in English rather than as an error.
 ns.L_enUS = {
-    DELETE_CONFIRM   = "Delete \"%s\"?\n%s",
+    DATE_UNKNOWN     = "unknown date",
+    DELETE_CONFIRM   = "Delete \"%s\"?",
+    DISCARD_CONFIRM  = "Discard the set kept on %s (%s)?",
+    DISCARD_FINAL    = "The kept copy is gone for good.",
+    DISCARD_LOST_FINAL = "No copy was kept; only the warning goes.",
     DELETE_COUNTS    = "%s folder(s) and %s page(s) will be removed.",
     EDITOR_HINT      = "Select a page on the left, or right-click a folder to create one.",
     EXPORT_TITLE     = "Export - Ctrl+C copies the selected text",
@@ -20,6 +24,9 @@ ns.L_enUS = {
     IMPORT_NOT_FOUND         = "The folder to import into no longer exists.",
     IMPORT_TEXT_OUTSIDE_PAGE = "There is text outside a page, under a folder or before the first entry.",
     MENU_DELETE      = "Delete",
+    MENU_DISCARD     = "Discard",
+    MENU_RECOVERY    = "Kept for recovery",
+    MENU_RESTORE     = "Restore",
     MENU_EXPORT      = "Export",
     MENU_IMPORT      = "Import here",
     MENU_MOVE        = "Move to",
@@ -28,16 +35,21 @@ ns.L_enUS = {
     MENU_RENAME      = "Rename",
     NEW_FOLDER_TITLE = "Untitled folder",
     NEW_PAGE_TITLE   = "Untitled page",
+    REASON_LOST      = "file missing",
+    REASON_NEWER     = "from a newer version",
+    REASON_UNREADABLE = "unreadable",
     RENAME_PROMPT    = "New name:",
+    RESTORED_TITLE   = "Restored %s",
     ROOT_ACCOUNT   = "Account notes",
     ROOT_CHARACTER = "Character notes",
     STATUS_DESIGN  = "Design: %s",
     STATUS_HEADER  = "%s %s",
     STATUS_ROOT    = "%s: %s notes, schema %s, created %s, loaded %s times, %s kept for recovery",
+    UNTITLED       = "Untitled",
     USAGE          = "%s: /n4e - open or close the notebook; /n4e status - show the addon's status",
     WINDOW_TITLE   = "Notes4Ever - Notebook",
     WARN_RECOVERY  = "Notes4Ever: %s set(s) of %s could not be read and are kept for recovery. "
                   .. "Copy %s and %s.bak somewhere safe now, before any /reload or logout - "
-                  .. "the next save replaces the .bak. Restore them with the game closed.",
+                  .. "the next save replaces the .bak. Restore or discard them from the right-click menu of %s.",
 }
 ns.L = ns.L_enUS

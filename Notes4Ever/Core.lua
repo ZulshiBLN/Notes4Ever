@@ -45,7 +45,7 @@ end)
 
 local function rootStatus(label, db)
     return L.STATUS_ROOT:format(label, Storage.count(db), db.schemaVersion,
-        date("%Y-%m-%d %H:%M:%S", db.root.created), db.loads, #(db.recovery or {}))
+        date("%Y-%m-%d %H:%M:%S", db.root.created), db.loads, Storage.recoveryCount(db))
 end
 
 function ns.PrintStatus()

@@ -6,7 +6,7 @@ local addonName, ns = ...
 -- The rule: what cannot be read is never overwritten. A table that is
 -- malformed, or whose migration fails, is kept unchanged in the `recovery`
 -- list of a fresh table, and the player is told until it is restored.
-local Model = ns.Model
+local Model, Transfer = ns.Model, ns.Transfer
 local Storage = {}
 ns.Storage = Storage
 
@@ -149,15 +149,135 @@ local PATHS = {
     character = [[WTF\Account\<account>\<realm>\<character>\SavedVariables\Notes4Ever.lua]],
 }
 
--- One message per table with recovery entries, until plan 3 can restore them.
+-- The recovery list is carried over as stored and may have holes. The
+-- warning, the root menu and /n4e status all count what ipairs reaches, so
+-- none of them names an entry the menu cannot show.
+function Storage.recoveryCount(db)
+    local count = 0
+    if type(db.recovery) == "table" then
+        for _ in ipairs(db.recovery) do count = count + 1 end
+    end
+    return count
+end
+
+-- One message per table with recovery entries, saying to copy the files and
+-- where to restore or discard them.
 function Storage.warnings(account, character, L)
     local messages = {}
     for _, entry in ipairs({ { account, "account", L.ROOT_ACCOUNT },
                              { character, "character", L.ROOT_CHARACTER } }) do
         local db, file, label = entry[1], entry[2], entry[3]
-        if db.recovery and #db.recovery > 0 then
-            messages[#messages + 1] = L.WARN_RECOVERY:format(#db.recovery, label, PATHS[file], PATHS[file])
+        local count = Storage.recoveryCount(db)
+        if count > 0 then
+            -- format cannot reuse an argument, so the label goes in twice.
+            messages[#messages + 1] = L.WARN_RECOVERY:format(count, label, PATHS[file], PATHS[file], label)
         end
     end
     return messages
+end
+
+-- Restoring ---------------------------------------------------------------
+--
+-- A recovery entry's `data` is the unreadable table as it was. Salvage
+-- reads what it still can; the rest goes, a malformed node with its
+-- subtree. What comes back has Transfer.parse's shape, so restore inserts
+-- it the way an import does.
+
+local function salvageNode(node, untitled)
+    if type(node) ~= "table" then return nil end
+    local title = node.title
+    if type(title) ~= "string" or not title:find("%S") then title = untitled end
+    local plain = { kind = node.kind, title = title }
+    if node.kind == "folder" and type(node.children) == "table" then
+        plain.children = {}
+        for _, child in ipairs(node.children) do
+            plain.children[#plain.children + 1] = salvageNode(child, untitled)
+        end
+    elseif node.kind == "page" and type(node.text) == "string" then
+        plain.text = node.text
+    else
+        return nil
+    end
+    return plain
+end
+
+-- The readable notes below `data`'s root, or an empty list. The root's own
+-- kind is not checked: its children are what the player wrote.
+function Storage.salvage(data, untitled)
+    local nodes = {}
+    if type(data) ~= "table" or type(data.root) ~= "table" or type(data.root.children) ~= "table" then
+        return nodes
+    end
+    for _, child in ipairs(data.root.children) do
+        nodes[#nodes + 1] = salvageNode(child, untitled)
+    end
+    return nodes
+end
+
+-- Decided by the data, not the reason: going back to an older build files
+-- the current schema's data as newer_schema, and that must come back.
+-- Data above the current schema waits for an update that reads it in full.
+function Storage.restorable(entry)
+    if type(entry) ~= "table" or type(entry.data) ~= "table" then return false end
+    local version = entry.data.schemaVersion
+    if type(version) == "number" and version > Model.SCHEMA_VERSION then return false end
+    -- Emptiness does not depend on the placeholder title.
+    return #Storage.salvage(entry.data, "") > 0
+end
+
+-- By identity, not position: a restore while a discard waits for its
+-- confirmation shifts the list.
+local function indexOf(db, entry)
+    if type(db.recovery) ~= "table" then return nil end
+    for i, candidate in ipairs(db.recovery) do
+        if candidate == entry then return i end
+    end
+end
+
+local function remove(db, index)
+    table.remove(db.recovery, index)
+    if #db.recovery == 0 then db.recovery = nil end
+end
+
+-- Puts an entry's readable notes into a new folder `title` in the root and
+-- removes the entry. Nil and a reason, changing nothing, if the entry is
+-- gone or cannot be restored.
+function Storage.restore(db, entry, title, untitled, now)
+    local index = indexOf(db, entry)
+    if not index then return nil, "gone" end
+    if not Storage.restorable(entry) then return nil, "not_restorable" end
+    local folder, err = Model.create(db, db.root.id, "folder", title, now)
+    if not folder then return nil, err end
+    Transfer.insert(db, folder.id, Storage.salvage(entry.data, untitled), now)
+    remove(db, index)
+    return folder
+end
+
+-- Removes an entry for good. Nil and "gone" if it is no longer there.
+function Storage.discard(db, entry)
+    local index = indexOf(db, entry)
+    if not index then return nil, "gone" end
+    remove(db, index)
+    return true
+end
+
+local function dateLabel(at, L, formatDate)
+    if not Model.finite(at) then return L.DATE_UNKNOWN end
+    -- WoW's date() is passed in; an out-of-range time can make it fail.
+    local ok, text = pcall(formatDate, "%Y-%m-%d %H:%M", at)
+    if ok and type(text) == "string" then return text end
+    return L.DATE_UNKNOWN
+end
+
+-- The entry's date and reason as the menu shows them, and the final line of
+-- Discard's confirmation. An entry that is not a table is never read.
+function Storage.describe(entry, L, formatDate)
+    if type(entry) ~= "table" then
+        return L.DATE_UNKNOWN, L.REASON_UNREADABLE, L.DISCARD_FINAL
+    end
+    if entry.reason == "lost" then
+        return dateLabel(entry.at, L, formatDate), L.REASON_LOST, L.DISCARD_LOST_FINAL
+    end
+    local reason = entry.reason == "newer_schema" and L.REASON_NEWER or L.REASON_UNREADABLE
+    return dateLabel(entry.at, L, formatDate), reason, L.DISCARD_FINAL
 end

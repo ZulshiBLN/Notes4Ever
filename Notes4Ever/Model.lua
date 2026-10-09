@@ -17,6 +17,15 @@ Model.SCHEMA_VERSION = 2
 local KINDS = { folder = true, page = true }
 Model.KINDS = KINDS
 
+-- A finite number, or nil: NaN and infinities fail the comparisons. Read
+-- wherever a stored number is not trusted - window geometry, a recovery
+-- entry's time.
+function Model.finite(value)
+    if type(value) == "number" and value > -math.huge and value < math.huge then
+        return value
+    end
+end
+
 local function newId(db)
     local id = db.nextId
     db.nextId = id + 1

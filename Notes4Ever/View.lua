@@ -18,12 +18,7 @@ local POINTS = {
     TOPLEFT = true, TOPRIGHT = true, BOTTOMLEFT = true, BOTTOMRIGHT = true,
 }
 
--- A finite number, or nil: NaN and infinities fail the comparisons below.
-local function finite(value)
-    if type(value) == "number" and value > -math.huge and value < math.huge then
-        return value
-    end
-end
+local finite = Model.finite
 
 -- Rows of the tree --------------------------------------------------------
 

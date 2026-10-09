@@ -7,13 +7,29 @@ local addon = require("addon")
 local NOW = 2000
 local GUID = "Player-1234-0ABCDEF0"
 
+-- In the TOC's order: Storage calls Transfer, Transfer calls Model.
 local function loadAddon()
     local ns = {}
     addon.load("Notes4Ever/Locales/enUS.lua", ns)
     addon.load("Notes4Ever/Model.lua", ns)
+    addon.load("Notes4Ever/Transfer.lua", ns)
     addon.load("Notes4Ever/Storage.lua", ns)
     return ns
 end
+
+-- Ways a saved table can be malformed, each applied to savedTable()'s
+-- root -> folder "Dungeons" -> page "Deadmines". Shared by the load tests,
+-- which keep each in recovery, and the salvage tests, which read it back.
+local MALFORMED = {
+    ["root not a table"]        = function(t) t.root = "x" end,
+    ["unknown kind"]            = function(t) t.root.children[1].kind = "picture" end,
+    ["folder without children"] = function(t) t.root.children[1].children = nil end,
+    ["page without text"]       = function(t) t.root.children[1].children[1].text = 42 end,
+    ["duplicate id"]            = function(t) t.root.children[1].children[1].id = t.root.children[1].id end,
+    ["newer schemaVersion"]     = function(t) t.schemaVersion = 99 end,
+    ["missing schemaVersion"]   = function(t) t.schemaVersion = nil end,
+    ["root of the wrong kind"]  = function(t) t.root.kind = "page" end,
+}
 
 local function deepCopy(t)
     if type(t) ~= "table" then return t end
@@ -132,17 +148,7 @@ describe("Storage", function()
     end)
 
     describe("a malformed table", function()
-        local cases = {
-            ["root not a table"]        = function(t) t.root = "x" end,
-            ["unknown kind"]            = function(t) t.root.children[1].kind = "picture" end,
-            ["folder without children"] = function(t) t.root.children[1].children = nil end,
-            ["page without text"]       = function(t) t.root.children[1].children[1].text = 42 end,
-            ["duplicate id"]            = function(t) t.root.children[1].children[1].id = t.root.children[1].id end,
-            ["newer schemaVersion"]     = function(t) t.schemaVersion = 99 end,
-            ["missing schemaVersion"]   = function(t) t.schemaVersion = nil end,
-        }
-
-        for name, breakIt in pairs(cases) do
+        for name, breakIt in pairs(MALFORMED) do
             it("is kept deep-equal in recovery: " .. name, function()
                 local saved = savedTable()
                 breakIt(saved)
@@ -254,6 +260,251 @@ describe("Storage", function()
         it("says nothing when no recovery entry exists", function()
             local account, character = savedTable(), savedTable()
             assert.are.same({}, Storage.warnings(account, character, ns.L))
+        end)
+
+        it("names the root menu as where to restore", function()
+            local db = Storage.load("garbage", NOW)
+            local messages = Storage.warnings(db, savedTable(), ns.L)
+            assert.is_truthy(messages[1]:find(ns.L.ROOT_ACCOUNT .. ".", 1, true))
+            assert.is_truthy(messages[1]:find("menu", 1, true))
+        end)
+
+        it("is gone once the last entry is restored or discarded", function()
+            for _, handle in ipairs({ "restore", "discard" }) do
+                local saved = savedTable()
+                saved.schemaVersion = nil
+                local db = Storage.load(saved, NOW)
+                local entry = db.recovery[1]
+                if handle == "restore" then
+                    assert.is_truthy(Storage.restore(db, entry, "Restored", "Untitled", NOW))
+                else
+                    assert.is_true(Storage.discard(db, entry))
+                end
+                assert.are.same({}, Storage.warnings(db, savedTable(), ns.L))
+                assert.are.equal(0, Storage.recoveryCount(db))
+            end
+        end)
+
+        -- A carried-over list may have holes; the warning, the menu and
+        -- /n4e status count the same entries, the ones ipairs reaches.
+        it("counts the entries ipairs reaches, as the menu lists them", function()
+            local db = savedTable()
+            db.recovery = { { reason = "lost", at = NOW }, nil, { reason = "lost", at = NOW } }
+            assert.are.equal(1, Storage.recoveryCount(db))
+            assert.is_truthy(Storage.warnings(db, savedTable(), ns.L)[1]:find("^Notes4Ever: 1 "))
+        end)
+    end)
+
+    -- Restoring and discarding recovery entries, by plan 3's RESEARCH,
+    -- Salvage per recovery entry.
+    describe("recovery entries", function()
+        local UNTITLED = "Untitled"
+        local BOTH = { { kind = "folder", title = "Dungeons", children = {
+            { kind = "page", title = "Deadmines", text = "VanCleef |cffff0000 äöü" } } } }
+
+        -- Kinds, titles, texts and shape, without ids and timestamps.
+        local function shape(node)
+            local out = { kind = node.kind, title = node.title, text = node.text }
+            if node.children then
+                out.children = {}
+                for i, child in ipairs(node.children) do out.children[i] = shape(child) end
+            end
+            return out
+        end
+
+        local function shapes(nodes)
+            local out = {}
+            for i, node in ipairs(nodes) do out[i] = shape(node) end
+            return out
+        end
+
+        -- The entry a load leaves for a table broken one way.
+        local function entryFor(breakIt)
+            local saved = savedTable()
+            breakIt(saved)
+            return Storage.load(saved, NOW).recovery[1]
+        end
+
+        local function nextSchema(migrate)
+            local current = Model.SCHEMA_VERSION
+            return { schemaVersion = current + 1, migrations = { [current] = migrate } }
+        end
+
+        local SALVAGED = {
+            ["root not a table"]        = {},
+            ["unknown kind"]            = {},
+            ["folder without children"] = {},
+            ["page without text"]       = { { kind = "folder", title = "Dungeons", children = {} } },
+            ["duplicate id"]            = BOTH,
+            ["missing schemaVersion"]   = BOTH,
+            ["root of the wrong kind"]  = BOTH,
+        }
+
+        for name, expected in pairs(SALVAGED) do
+            it("salvages " .. name .. " as RESEARCH's table says", function()
+                local entry = entryFor(MALFORMED[name])
+                assert.are.same(expected, Storage.salvage(entry.data, UNTITLED))
+                assert.are.equal(#expected > 0, Storage.restorable(entry))
+            end)
+        end
+
+        it("salvages a table that is not a table as nothing", function()
+            local entry = Storage.load("garbage", NOW).recovery[1]
+            assert.are.same({}, Storage.salvage(entry.data, UNTITLED))
+            assert.is_false(Storage.restorable(entry))
+        end)
+
+        it("does not restore data of a newer schema, though it reads", function()
+            local entry = entryFor(MALFORMED["newer schemaVersion"])
+            assert.are.same(BOTH, Storage.salvage(entry.data, UNTITLED))
+            assert.is_false(Storage.restorable(entry))
+        end)
+
+        -- Going back to an older build files the current schema's data as
+        -- newer_schema; plan 1b promised its restore.
+        it("restores a newer_schema entry whose data is at the current schema", function()
+            local older = { schemaVersion = Model.SCHEMA_VERSION - 1, migrations = {} }
+            local entry = Storage.load(savedTable(), NOW, older).recovery[1]
+            assert.are.equal("newer_schema", entry.reason)
+            assert.are.same(BOTH, Storage.salvage(entry.data, UNTITLED))
+            assert.is_true(Storage.restorable(entry))
+        end)
+
+        it("restores what a migration raising midway left", function()
+            local options = nextSchema(function(db) db.root.children = nil; error("half done") end)
+            local entry = Storage.load(savedTable(), NOW, options).recovery[1]
+            assert.are.same(BOTH, Storage.salvage(entry.data, UNTITLED))
+            assert.is_true(Storage.restorable(entry))
+        end)
+
+        it("does not restore a lost entry, which has no data", function()
+            assert.is_false(Storage.restorable({ reason = "lost", file = "character", expected = 3, at = NOW }))
+        end)
+
+        it("names a title that is not a non-blank string untitled, and drops non-tables", function()
+            local data = { root = { kind = "folder", children = {
+                { kind = "page", title = "  ", text = "a" },
+                { kind = "page", title = 7, text = "b" },
+                42,
+                { kind = "folder", title = "F", children = { "junk", { kind = "page", text = "c" } } },
+            } } }
+            assert.are.same({
+                { kind = "page", title = UNTITLED, text = "a" },
+                { kind = "page", title = UNTITLED, text = "b" },
+                { kind = "folder", title = "F", children = { { kind = "page", title = UNTITLED, text = "c" } } },
+            }, Storage.salvage(data, UNTITLED))
+        end)
+
+        it("keeps only kind, title and text or children", function()
+            local data = { root = { children = { { kind = "page", title = "P", text = "t",
+                id = 9, created = 1, modified = 2, junk = true } } } }
+            assert.are.same({ { kind = "page", title = "P", text = "t" } }, Storage.salvage(data, UNTITLED))
+        end)
+
+        describe("restore and discard", function()
+            local function twoEntries()
+                local saved = savedTable()
+                saved.schemaVersion = nil
+                local db = Storage.load(saved, NOW)
+                db.recovery[2] = { reason = "lost", file = "account", expected = 1, at = NOW }
+                return db, db.recovery[1], db.recovery[2]
+            end
+
+            it("restores into a new folder in the root, with fresh ids, removing only its entry", function()
+                local db, first, second = twoEntries()
+                local before = #db.root.children
+                local folder = assert(Storage.restore(db, first, "Restored 2026", UNTITLED, NOW + 9))
+                assert.are.equal(before + 1, #db.root.children)
+                assert.are.equal(folder, db.root.children[#db.root.children])
+                assert.are.equal("Restored 2026", folder.title)
+                assert.are.equal(NOW + 9, folder.created)
+                assert.are.same(BOTH, shapes(folder.children))
+                local seen = {}
+                local function walk(n)
+                    assert.is_nil(seen[n.id], "duplicate id " .. tostring(n.id))
+                    seen[n.id] = true
+                    for _, c in ipairs(n.children or {}) do walk(c) end
+                end
+                walk(db.root)
+                assert.are.same({ second }, db.recovery)
+            end)
+
+            it("refuses an entry no longer there, and one gone is checked first", function()
+                local db, first = twoEntries()
+                Storage.discard(db, first)
+                local ok, reason = Storage.restore(db, first, "R", UNTITLED, NOW)
+                assert.is_nil(ok)
+                assert.are.equal("gone", reason)
+                ok, reason = Storage.discard(db, first)
+                assert.is_nil(ok)
+                assert.are.equal("gone", reason)
+            end)
+
+            it("refuses an unrestorable entry, which stays", function()
+                local db, _, lost = twoEntries()
+                local children = #db.root.children
+                local ok, reason = Storage.restore(db, lost, "R", UNTITLED, NOW)
+                assert.is_nil(ok)
+                assert.are.equal("not_restorable", reason)
+                assert.are.equal(2, #db.recovery)
+                assert.are.equal(children, #db.root.children)
+            end)
+
+            it("discards only its entry, found by identity", function()
+                local db, first, second = twoEntries()
+                assert.is_true(Storage.discard(db, second))
+                assert.are.same({ first }, db.recovery)
+            end)
+        end)
+
+        describe("labels", function()
+            local function formatDate(fmt, at) return fmt .. "@" .. at end
+            local L
+
+            before_each(function() L = ns.L end)
+
+            it("dates and names an unreadable entry, with the final line for a kept copy", function()
+                local date, reason, final = Storage.describe({ reason = "duplicate_id", at = 5, data = {} }, L, formatDate)
+                assert.are.equal("%Y-%m-%d %H:%M@5", date)
+                assert.are.equal(L.REASON_UNREADABLE, reason)
+                assert.are.equal(L.DISCARD_FINAL, final)
+            end)
+
+            it("names lost and newer entries, a lost one with its own final line", function()
+                local _, reason, final = Storage.describe({ reason = "lost", at = 5 }, L, formatDate)
+                assert.are.equal(L.REASON_LOST, reason)
+                assert.are.equal(L.DISCARD_LOST_FINAL, final)
+                _, reason, final = Storage.describe({ reason = "newer_schema", at = 5, data = {} }, L, formatDate)
+                assert.are.equal(L.REASON_NEWER, reason)
+                assert.are.equal(L.DISCARD_FINAL, final)
+            end)
+
+            it("labels an entry that is not a table unknown and unreadable", function()
+                local date, reason = Storage.describe(42, L, formatDate)
+                assert.are.equal(L.DATE_UNKNOWN, date)
+                assert.are.equal(L.REASON_UNREADABLE, reason)
+                assert.is_false(Storage.restorable(42))
+            end)
+
+            it("gives an unknown date for a time that is not a finite number, or that the formatter refuses", function()
+                local failing = function() error("out of range") end
+                local returnsNil = function() return nil end
+                for _, case in ipairs({
+                    { "x", formatDate }, { 0 / 0, formatDate }, { math.huge, formatDate },
+                    { 1e300, failing }, { 5, returnsNil },
+                }) do
+                    assert.are.equal(L.DATE_UNKNOWN, (Storage.describe({ reason = "lost", at = case[1] }, L, case[2])))
+                end
+            end)
+
+            it("restores an entry whose date is unknown", function()
+                local saved = savedTable()
+                saved.schemaVersion = nil
+                local db = Storage.load(saved, NOW)
+                db.recovery[1].at = "x"
+                assert.is_true(Storage.restorable(db.recovery[1]))
+                assert.are.equal(L.DATE_UNKNOWN, (Storage.describe(db.recovery[1], L, formatDate)))
+            end)
         end)
     end)
 end)

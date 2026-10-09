@@ -3,7 +3,11 @@ local addonName, ns = ...
 if GetLocale() ~= "deDE" then return end
 
 ns.L = setmetatable({
-    DELETE_CONFIRM   = "\"%s\" löschen?\n%s",
+    DATE_UNKNOWN     = "unbekanntes Datum",
+    DELETE_CONFIRM   = "\"%s\" löschen?",
+    DISCARD_CONFIRM  = "Die am %s aufbewahrte Fassung (%s) verwerfen?",
+    DISCARD_FINAL    = "Die aufbewahrte Kopie ist danach endgültig weg.",
+    DISCARD_LOST_FINAL = "Es wurde keine Kopie aufbewahrt; nur die Warnung verschwindet.",
     DELETE_COUNTS    = "%s Ordner und %s Seite(n) werden entfernt.",
     EDITOR_HINT      = "Wähle links eine Seite, oder lege per Rechtsklick auf einen Ordner eine an.",
     EXPORT_TITLE     = "Exportieren - Strg+C kopiert den markierten Text",
@@ -19,6 +23,9 @@ ns.L = setmetatable({
     IMPORT_NOT_FOUND         = "Der Ordner, in den importiert werden sollte, existiert nicht mehr.",
     IMPORT_TEXT_OUTSIDE_PAGE = "Es steht Text außerhalb einer Seite, unter einem Ordner oder vor dem ersten Eintrag.",
     MENU_DELETE      = "Löschen",
+    MENU_DISCARD     = "Verwerfen",
+    MENU_RECOVERY    = "Zur Wiederherstellung aufbewahrt",
+    MENU_RESTORE     = "Wiederherstellen",
     MENU_EXPORT      = "Exportieren",
     MENU_IMPORT      = "Hier importieren",
     MENU_MOVE        = "Verschieben nach",
@@ -27,15 +34,20 @@ ns.L = setmetatable({
     MENU_RENAME      = "Umbenennen",
     NEW_FOLDER_TITLE = "Unbenannter Ordner",
     NEW_PAGE_TITLE   = "Unbenannte Seite",
+    REASON_LOST      = "Datei fehlt",
+    REASON_NEWER     = "von einer neueren Version",
+    REASON_UNREADABLE = "nicht lesbar",
     RENAME_PROMPT    = "Neuer Name:",
+    RESTORED_TITLE   = "Wiederhergestellt %s",
     ROOT_ACCOUNT   = "Account-Notizen",
     ROOT_CHARACTER = "Charakter-Notizen",
     STATUS_DESIGN  = "Aussehen: %s",
     STATUS_HEADER  = "%s Version %s",
     STATUS_ROOT    = "%s: %s Notizen, Schema %s, angelegt %s, %s-mal geladen, %s zur Wiederherstellung aufbewahrt",
+    UNTITLED       = "Ohne Titel",
     USAGE          = "%s: /n4e - Notizbuch öffnen oder schließen; /n4e status - zeigt den Status des Addons",
     WINDOW_TITLE   = "Notes4Ever - Notizbuch",
     WARN_RECOVERY  = "Notes4Ever: %s nicht lesbare Fassung(en) der %s zur Wiederherstellung aufbewahrt. "
                   .. "Kopiere %s und %s.bak jetzt an einen sicheren Ort, vor jedem /reload oder Logout - "
-                  .. "das nächste Speichern ersetzt die .bak. Stelle sie bei geschlossenem Spiel wieder her.",
+                  .. "das nächste Speichern ersetzt die .bak. Stelle sie über das Rechtsklick-Menü der %s wieder her oder verwirf sie.",
 }, { __index = ns.L_enUS })
