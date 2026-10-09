@@ -13,7 +13,7 @@ professions, routes, to-do lists — without leaving the game.
 | Command | Does |
 |---|---|
 | `/n4e` or `/notes` | opens or closes the notebook window |
-| `/n4e status` | prints the version and, for account and character notes, their count, schema, creation time, load count and how many unreadable sets are kept |
+| `/n4e status` | prints the version, the window's design and, for account and character notes, their count, schema, creation time, load count and how many unreadable sets are kept |
 
 The AddOn compartment entry (the button beside the minimap) opens the window
 too. Escape closes it; drag it to move it, and the corner grip to resize it.
@@ -33,6 +33,24 @@ Click a page to write in it on the right. Text is saved a moment after you
 stop typing, and at once when you close the window, open another page,
 change the tree, log out or `/reload`. Escape leaves the text field; a
 second Escape closes the window.
+
+## Design
+
+The window has the Blizzard look: gold frame, parchment. With EllesmereUI
+installed, it takes on EllesmereUI's flat, dark look instead: its backdrop and
+border, close button, scroll bar, font and accent colour for the selected row.
+Notes4Ever has no setting for this; EllesmereUI decides, and its look applies
+only while all three of these are on:
+
+1. EllesmereUI's **Blizzard Skins+** module
+2. its switch for third-party addons
+3. Notes4Ever's own toggle, under *Blizzard Skins+ > Window Skins >
+   Third-Party Addons*
+
+Turning Notes4Ever's toggle on changes an open window at once. Turning any of
+them off needs a `/reload` before the Blizzard look returns; until then
+`/n4e status` still names EllesmereUI. To keep the Blizzard look while using
+EllesmereUI, turn Notes4Ever's toggle off there.
 
 ## Where your notes live, and how to keep them
 

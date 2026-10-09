@@ -3,6 +3,9 @@ local addonName, ns = ...
 -- The seam between the window code and how it looks. Window code names a
 -- role - "window", "treeRow" - and the skins decide what that looks like.
 -- Only files in Skins/ style frames; a source check enforces it.
+-- An optional UI suite is reached only through its public skinning API, and
+-- named only in its own adapter, Skins/<Suite>.lua - the source check and
+-- luacheck refuse it anywhere else, so the addon works the same without it.
 --
 -- Blizzard is the base and styles every frame. Another skin is an overlay on
 -- top: it may restyle what the base set, but never has to provide it again -
