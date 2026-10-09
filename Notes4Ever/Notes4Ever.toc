@@ -14,6 +14,7 @@
 Locales\enUS.lua
 Locales\deDE.lua
 Model.lua
+Transfer.lua
 Storage.lua
 View.lua
 Skin.lua

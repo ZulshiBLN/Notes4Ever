@@ -151,6 +151,32 @@ function Model.move(fromDb, id, toDb, toParentId, now)
     return moved, ids
 end
 
+-- A new node of `db` from a plain one - kind, title, then text or children,
+-- as Transfer.parse returns them - with fresh ids and the given time.
+local function build(db, plain, now)
+    local node = { id = newId(db), kind = plain.kind, title = plain.title,
+                   created = now, modified = now }
+    if plain.kind == "folder" then
+        node.children = {}
+        for i, child in ipairs(plain.children) do node.children[i] = build(db, child, now) end
+    else
+        node.text = plain.text
+    end
+    return node
+end
+
+-- Appends plain nodes under a folder and returns the new nodes. One search
+-- for the folder, then one pass: created node by node, every node would
+-- search the whole tree again, and a large import would time out.
+function Model.attach(db, folderId, nodes, now)
+    local folder, err = folderIn(db, folderId)
+    if not folder then return nil, err end
+    local added = {}
+    for i, plain in ipairs(nodes) do added[i] = build(db, plain, now) end
+    for _, node in ipairs(added) do folder.children[#folder.children + 1] = node end
+    return added
+end
+
 -- Removes a node and its subtree; returns how many nodes went.
 function Model.delete(db, id)
     local node, parent = Model.find(db, id)
