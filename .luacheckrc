@@ -34,6 +34,7 @@ read_globals = {
     "CreateScrollBoxListLinearView",
     "GameFontHighlightSmall",
     "GameFontNormal",
+    "GetCursorPosition",
     "GetLocale",
     "geterrorhandler",
     "ScrollBoxConstants",

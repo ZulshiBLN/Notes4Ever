@@ -49,15 +49,29 @@ local function build()
         saveGeometry()
     end)
 
-    frame:SetResizable(true)
-    frame:SetResizeBounds(View.MIN_WIDTH, View.MIN_HEIGHT)
+    -- Resized by hand rather than StartSizing, which moved the corner to the
+    -- cursor - under EllesmereUI each click on the grip changed the size
+    -- (plan 2, build 70245). The size follows the cursor's movement only.
     local grip = CreateFrame("Button", nil, frame)
     grip:SetSize(16, 16)
     grip:SetPoint("BOTTOMRIGHT", -4, 4)
     Skin:Apply("resizeGrip", grip)
-    grip:SetScript("OnMouseDown", function() frame:StartSizing("BOTTOMRIGHT") end)
+    grip:SetScript("OnMouseDown", function()
+        -- Anchored at the top left while sizing, so only the corner moves.
+        local left, top = frame:GetLeft(), frame:GetTop()
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+        local scale = frame:GetEffectiveScale()
+        local x, y = GetCursorPosition()
+        local start = { x = x / scale, y = y / scale,
+                        width = frame:GetWidth(), height = frame:GetHeight() }
+        grip:SetScript("OnUpdate", function()
+            local cx, cy = GetCursorPosition()
+            frame:SetSize(View.dragSize(start, cx / scale, cy / scale))
+        end)
+    end)
     grip:SetScript("OnMouseUp", function()
-        frame:StopMovingOrSizing()
+        grip:SetScript("OnUpdate", nil)
         saveGeometry()
     end)
 

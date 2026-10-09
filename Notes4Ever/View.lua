@@ -176,6 +176,16 @@ function View.editorFollow(editor, fromTable, toTable, ids)
     if newId then editor.page = { table = toTable, id = newId } end
 end
 
+-- The window's size while its grip is dragged: the size at the press plus
+-- the cursor's movement since - right and down grow it - never below the
+-- minimum. `start` holds the cursor's x, y and the window's width, height at
+-- the press. Movement, not position: StartSizing moved the corner to the
+-- cursor, a jump of up to the grip's size under EllesmereUI.
+function View.dragSize(start, x, y)
+    return math.max(start.width + (x - start.x), View.MIN_WIDTH),
+           math.max(start.height - (y - start.y), View.MIN_HEIGHT)
+end
+
 -- The stored window geometry, made safe to apply. Whatever is missing or
 -- malformed takes its default - the field is a convenience and is never
 -- trusted - and a size below the minimum is raised to it.

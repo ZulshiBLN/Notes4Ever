@@ -57,6 +57,36 @@ describe("View.geometry", function()
     end)
 end)
 
+-- Resizing from the grip: the size follows the cursor's movement since the
+-- grip was pressed, never its position - with StartSizing the corner jumped
+-- to the cursor under EllesmereUI (plan 2, in game on 70245).
+describe("View.dragSize", function()
+    local View
+
+    before_each(function()
+        View = loadView()
+    end)
+
+    -- Cursor coordinates grow rightwards and upwards, as on the client.
+    local start = { x = 900, y = 120, width = 700, height = 500 }
+
+    it("keeps the size while the cursor has not moved, wherever on the grip it was pressed", function()
+        assert.are.same({ 700, 500 }, { View.dragSize(start, 900, 120) })
+        -- The same window pressed elsewhere: only movement counts.
+        local elsewhere = { x = 1310, y = 655, width = 700, height = 500 }
+        assert.are.same({ 700, 500 }, { View.dragSize(elsewhere, 1310, 655) })
+    end)
+
+    it("grows right and down with the cursor, shrinks left and up", function()
+        assert.are.same({ 730, 540 }, { View.dragSize(start, 930, 80) })
+        assert.are.same({ 650, 480 }, { View.dragSize(start, 850, 140) })
+    end)
+
+    it("stops at the minimum size", function()
+        assert.are.same({ View.MIN_WIDTH, View.MIN_HEIGHT }, { View.dragSize(start, 0, 2000) })
+    end)
+end)
+
 describe("View.rows", function()
     local View, Model
     local NOW = 3000
