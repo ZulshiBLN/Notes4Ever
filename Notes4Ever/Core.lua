@@ -52,6 +52,8 @@ function ns.PrintStatus()
     print(L.STATUS_HEADER:format(addonName, version))
     print(rootStatus(L.ROOT_ACCOUNT, Notes4EverDB))
     print(rootStatus(L.ROOT_CHARACTER, Notes4EverCharDB))
+    -- The skin's own name, not translated: it names an addon or the game.
+    print(L.STATUS_DESIGN:format(ns.Skin.active))
 end
 
 SLASH_NOTES4EVER1 = "/n4e"

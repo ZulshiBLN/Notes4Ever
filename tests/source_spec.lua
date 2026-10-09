@@ -51,6 +51,26 @@ describe("source check", function()
         assert.are.same({}, rulesIn('node.text = ""\n'))
     end)
 
+    -- project.md: a UI suite is reached only through its public API, behind
+    -- ns.Skin - so only its adapter names it.
+    it("reports EllesmereUI named outside its adapter", function()
+        for _, line in ipairs({
+            'if EllesmereUI then end',
+            'local S = EllesmereUI.RegisterSkin',
+            'local db = EllesmereUIDB',
+        }) do
+            assert.are.same({ "suite" }, rulesIn(line .. "\n"), line)
+        end
+    end)
+
+    it("lets the adapter name EllesmereUI, and ignores it in strings and comments", function()
+        assert.are.same({}, rulesIn("if EllesmereUI then end\n", "Notes4Ever/Skins/EllesmereUI.lua"))
+        assert.are.same({}, rulesIn('local name = "EllesmereUI"\n'))
+        assert.are.same({}, rulesIn("local name = 'EllesmereUI'\n"))
+        assert.are.same({}, rulesIn("-- EllesmereUI calls back at login\n"))
+        assert.are.same({ "suite" }, rulesIn("if EllesmereUI then end\n", "Notes4Ever/Skins/Blizzard.lua"))
+    end)
+
     it("ignores what only a comment says", function()
         assert.are.same({}, rulesIn('-- frame:SetBackdrop(x) and print("x") are not done here\n'))
     end)

@@ -17,6 +17,7 @@ ns.L_enUS = {
     RENAME_PROMPT    = "New name:",
     ROOT_ACCOUNT   = "Account notes",
     ROOT_CHARACTER = "Character notes",
+    STATUS_DESIGN  = "Design: %s",
     STATUS_HEADER  = "%s %s",
     STATUS_ROOT    = "%s: %s notes, schema %s, created %s, loaded %s times, %s kept for recovery",
     USAGE          = "%s: /n4e - open or close the notebook; /n4e status - show the addon's status",

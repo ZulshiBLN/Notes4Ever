@@ -7,6 +7,7 @@
 ## X-License: MIT
 ## SavedVariables: Notes4EverDB
 ## SavedVariablesPerCharacter: Notes4EverCharDB
+## OptionalDeps: EllesmereUI
 ## AddonCompartmentFunc: Notes4Ever_OnAddonCompartmentClick
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
 
@@ -17,6 +18,7 @@ Storage.lua
 View.lua
 Skin.lua
 Skins\Blizzard.lua
+Skins\EllesmereUI.lua
 UI\Tree.lua
 UI\Actions.lua
 UI\Editor.lua

@@ -16,6 +16,7 @@ ns.L = setmetatable({
     RENAME_PROMPT    = "Neuer Name:",
     ROOT_ACCOUNT   = "Account-Notizen",
     ROOT_CHARACTER = "Charakter-Notizen",
+    STATUS_DESIGN  = "Aussehen: %s",
     STATUS_HEADER  = "%s Version %s",
     STATUS_ROOT    = "%s: %s Notizen, Schema %s, angelegt %s, %s-mal geladen, %s zur Wiederherstellung aufbewahrt",
     USAGE          = "%s: /n4e - Notizbuch öffnen oder schließen; /n4e status - zeigt den Status des Addons",

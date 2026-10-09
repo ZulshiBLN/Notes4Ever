@@ -53,6 +53,10 @@ read_globals = {
     } },
 }
 
+-- project.md: a UI suite is reached only through its public API, behind
+-- ns.Skin - its global is known to its adapter alone.
+files["Notes4Ever/Skins/EllesmereUI.lua"] = { read_globals = { "EllesmereUI" } }
+
 -- Every addon file opens with `local addonName, ns = ...` (code.md), whether
 -- or not it uses the name.
 ignore = { "211/addonName" }

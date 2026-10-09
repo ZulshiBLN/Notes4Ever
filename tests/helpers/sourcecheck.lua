@@ -1,8 +1,9 @@
--- Two rules from the ruleset's code.md, read off the source: every frame is
--- styled through ns.Skin (so only Skins/ may call styling methods), and
--- every visible string comes from L (so no literal is shown directly).
--- Pattern-based: it catches the direct forms, not a string built elsewhere
--- and passed in through a variable.
+-- Rules from the ruleset read off the source: every frame is styled through
+-- ns.Skin (code.md - so only Skins/ may call styling methods), every visible
+-- string comes from L (code.md - so no literal is shown directly), and a UI
+-- suite is reached only through its public API behind ns.Skin (project.md -
+-- so only its adapter names it). Pattern-based: it catches the direct forms,
+-- not a string built elsewhere and passed in through a variable.
 local M = {}
 
 local STYLING = {
@@ -24,13 +25,26 @@ local SHOWN = {
     "^%s*text%s*=%s*" .. LITERAL,
 }
 
+-- A UI suite's globals and the one file that may name them. Prefix match:
+-- EllesmereUIDB is EllesmereUI's too.
+local SUITES = {
+    { global = "%f[%w_]EllesmereUI", adapter = "Skins[/\\]EllesmereUI%.lua$" },
+}
+
 -- Line comments are dropped first; a "--" inside a string is rare here and
 -- would only hide a finding, never invent one.
 local function code(line)
     return (line:gsub("%-%-.*$", ""))
 end
 
--- Returns the findings for one file: { rule = "styling" | "literal", line = n }.
+-- Without its short string literals, so a suite named in text - a skin's
+-- registered name - is not taken for the global.
+local function withoutStrings(text)
+    return (text:gsub('"[^"]*"', '""'):gsub("'[^']*'", "''"))
+end
+
+-- Returns the findings for one file:
+-- { rule = "styling" | "literal" | "suite", line = n }.
 function M.check(source, path)
     local findings = {}
     local styled = path:find("Skins/", 1, true) or path:find("Skins\\", 1, true)
@@ -51,6 +65,11 @@ function M.check(source, path)
                 if text:find(pattern) then
                     findings[#findings + 1] = { rule = "literal", line = n, what = pattern }
                 end
+            end
+        end
+        for _, suite in ipairs(SUITES) do
+            if not path:find(suite.adapter) and withoutStrings(text):find(suite.global) then
+                findings[#findings + 1] = { rule = "suite", line = n, what = suite.global }
             end
         end
     end

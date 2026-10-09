@@ -6,14 +6,24 @@ local luacheck = require("luacheck")
 local lfs = require("lfs")
 
 -- The config is Lua that assigns globals; run it in an empty environment and
--- hand what it set to luacheck as options. The per-directory `files` section
--- is left out: the snippets stand in for addon code.
+-- hand what it set to luacheck as options. The per-path `files` section is
+-- returned apart: a snippet stands in for ordinary addon code unless a test
+-- names the path it stands for.
 local function loadConfig()
-    local options = {}
+    local options = { files = {} }
     local chunk = assert(loadfile(".luacheckrc"))
-    setfenv(chunk, setmetatable(options, { __index = { files = {} } }))
+    setfenv(chunk, options)
     chunk()
+    local files = options.files
     options.files = nil
+    return options, files
+end
+
+-- Options for sources at `paths`: the config, plus each path's own section
+-- in the array part, which luacheck applies per source.
+local function configFor(paths)
+    local options, files = loadConfig()
+    for i, path in ipairs(paths) do options[i] = files[path] or {} end
     return options
 end
 
@@ -88,7 +98,19 @@ describe(".luacheckrc", function()
         end
         walk("Notes4Ever")
         assert.is_true(#sources > 0)
-        local report = luacheck.check_strings(sources, loadConfig())
+        local report = luacheck.check_strings(sources, configFor(names))
         assert.are.equal(0, report.warnings + report.errors, table.concat(names, ", "))
+    end)
+
+    -- project.md: a UI suite is reached only through its adapter.
+    it("knows EllesmereUI in its adapter alone", function()
+        local source = "local S = EllesmereUI\nreturn S\n"
+        local report = luacheck.check_strings({ source, source, source }, configFor({
+            "Notes4Ever/Skins/EllesmereUI.lua", "Notes4Ever/Skins/Blizzard.lua", "Notes4Ever/Core.lua",
+        }))
+        assert.are.equal(0, #report[1])
+        for i = 2, 3 do
+            assert.are.equal("113", report[i][1] and report[i][1].code, i)
+        end
     end)
 end)
