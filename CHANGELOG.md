@@ -30,7 +30,15 @@ without EllesmereUI 9.4.
   account and character notes, how many there are, the schema, when they
   were created, how often they were loaded and how many unreadable sets are
   kept.
+- A search box above the tree shows only the pages and folders that contain
+  what you type, by title or text.
+- Export any page, folder or whole set of notes as readable text to copy out
+  with Ctrl+C, as a backup or to share; import such text into any folder.
+  Nothing is overwritten, and text that is not a valid export is refused
+  with the reason.
 - Saved notes that cannot be read are never overwritten: they are kept for
   recovery, and every login says so and how to secure the game's backup file.
+  The root's right-click menu restores what can still be read into a new
+  folder, or discards a kept set after asking.
 - German texts on a German client; anything not yet translated shows in
   English.

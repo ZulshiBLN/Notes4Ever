@@ -6,7 +6,8 @@ Create pages, organise them in folders, and keep notes on anything — dungeons,
 professions, routes, to-do lists — without leaving the game.
 
 > Status: in development. Nothing is released yet. The current build loads on
-> WoW: Forever; folders and pages can be created, organised and written in.
+> WoW: Forever; folders and pages can be created, organised, written in,
+> searched, exported and imported.
 
 ## Commands
 
@@ -28,11 +29,51 @@ a folder to open or close it. Right-click a row for:
 - **Move to** — any folder of either set; moving between account and
   character notes takes the whole subtree along
 - **Delete** — asks first and says how many folders and pages go with it
+- **Export** — on any row; see below
+- **Import here** — on a folder; see below
 
 Click a page to write in it on the right. Text is saved a moment after you
 stop typing, and at once when you close the window, open another page,
 change the tree, log out or `/reload`. Escape leaves the text field; a
 second Escape closes the window.
+
+## Searching
+
+Type into the box above the tree. It then shows only the pages whose title
+or text contains what you typed, and the folders whose title does - a
+folder with everything in it. Upper and lower case do not matter for A–Z;
+umlauts must match as typed. While you search, clicking a folder does not
+open or close it, and the page you have open stays open. Clear the box to
+see the whole tree again, as it was.
+
+## Export and import
+
+**Export** writes a page, a folder with everything in it, or a whole set of
+notes as plain text. The dialog shows it selected: press **Ctrl+C**, then
+paste it wherever you keep it - a text file is a backup the game's own files
+cannot give you, and the text can be shared.
+
+**Import here** reads such text into the folder you clicked: paste it with
+**Ctrl+V** and click Accept. What you import is added next to what is there;
+nothing is overwritten. If the text is not a valid export, the dialog says
+why and adds nothing.
+
+The text is meant to be readable:
+
+```
+Notes4Ever export 1
+# Dungeons/
+## Blackrock Depths/
+### Route
+First left, then ...
+# Shopping
+- 20 linen
+```
+
+Each `#` is a level; a title ending in `/` is a folder; the lines under a
+page's title are its text. Pasting a very large export takes the game a few
+seconds - about ten for 100,000 characters - so for large collections,
+export single folders.
 
 ## Design
 
@@ -63,7 +104,7 @@ WTF\Account\<account>\SavedVariables\Notes4Ever.lua                        accou
 WTF\Account\<account>\<realm>\<character>\SavedVariables\Notes4Ever.lua    character notes
 ```
 
-Three things to know:
+Four things to know:
 
 - **The game saves only on `/reload`, logout, disconnect and quit.** If the
   game crashes, everything since the last of those is lost. No addon can
@@ -72,8 +113,15 @@ Three things to know:
   the `.bak` that was there. The `.bak` is always the state before the last
   save, no older. If Notes4Ever warns at login that notes could not be read or
   went missing, copy both `Notes4Ever.lua` and `Notes4Ever.lua.bak` somewhere
-  safe *before* any `/reload` or logout. To restore, close the game first and
-  copy the file back; the game overwrites the folder when it exits.
+  safe *before* any `/reload` or logout. To put a copied file back, close the
+  game first; the game overwrites the folder when it exits.
+- **Notes that could not be read are kept, not overwritten.** While any are
+  kept, right-clicking *Account notes* or *Character notes* shows **Kept for
+  recovery**, listing each kept set with its date. **Restore** puts everything that can
+  still be read into a new folder "Restored …"; **Discard** removes the set
+  for good, after asking. A set saved by a newer Notes4Ever can only be
+  discarded until you update. Export regularly - it is the only backup that
+  does not depend on the game's files.
 - **Character notes stay with the character's folder.** After a rename, a
   realm transfer or a faction change, the game starts a new, empty folder; the
   old notes are still in the old folder, and Notes4Ever may warn that they are
