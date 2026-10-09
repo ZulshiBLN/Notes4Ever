@@ -34,6 +34,16 @@ ns.Skin:Register("Blizzard", {
         fontString:SetFontObject(GameFontDisable)
     end,
 
+    -- The export and import dialog: a ButtonFrameTemplate like the window.
+    -- The fonts are set here so an overlay re-fonting them finds an object.
+    dialog = function(frame, editBox, _, reason)
+        if ButtonFrameTemplate_HidePortrait then
+            ButtonFrameTemplate_HidePortrait(frame)
+        end
+        editBox:SetFontObject(GameFontHighlight)
+        reason:SetFontObject(GameFontRed)
+    end,
+
     resizeGrip = function(button)
         button:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
         button:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")

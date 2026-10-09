@@ -30,7 +30,7 @@ local ACCENT = { 0.1, 0.2, 0.3 }
 local function newFacade(calls)
     local S = { looks = {} }
     for _, primitive in ipairs({ "Shell", "FadeNineSlice", "Inset", "CloseButton",
-                                 "ScrollBar", "Font" }) do
+                                 "ScrollBar", "Font", "EditBox", "Button" }) do
         S[primitive] = function(target, ...)
             calls[#calls + 1] = table.concat({ primitive, target.name, ... }, ":")
         end
@@ -145,6 +145,23 @@ describe("EllesmereUI adapter", function()
             assert.are.same({
                 "SetFont:editBox:base.ttf:10", "Font:editBox:1:1:1",
                 "SetFont:hint:base.ttf:10", "Font:hint:0.5:0.5:0.5",
+            }, calls)
+        end)
+
+        -- The export and import dialog looks like the window: the same shell,
+        -- border and inset, the suite's button, and the edit box and reason
+        -- line re-fonted at their base fonts. Its scroll bar takes the
+        -- scrollBar role, so it is not styled here.
+        it("gives the dialog the window's shell, the button, and re-fonts box and reason", function()
+            local dialog = { name = "dialog", NineSlice = { name = "nine" },
+                             Inset = { name = "inset" }, CloseButton = { name = "close" } }
+            overlay.dialog(dialog, text(calls, "editBox", 1, 1, 1), { name = "accept" },
+                           text(calls, "reason", 1, 0.1, 0.1))
+            assert.are.same({
+                "Shell:dialog", "FadeNineSlice:nine", "Inset:inset", "CloseButton:close",
+                "Button:accept",
+                "SetFont:editBox:base.ttf:10", "Font:editBox:1:1:1",
+                "SetFont:reason:base.ttf:10", "Font:reason:1:0.1:0.1",
             }, calls)
         end)
 

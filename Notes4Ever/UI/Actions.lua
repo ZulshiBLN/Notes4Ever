@@ -1,6 +1,6 @@
 local addonName, ns = ...
 
-local L, Model, View = ns.L, ns.Model, ns.View
+local L, Model, View, Transfer = ns.L, ns.Model, ns.View, ns.Transfer
 
 -- The tree's right-click menu and the two dialogs behind it: new folder or
 -- page, rename, move, delete. What is allowed - move targets, what a delete
@@ -124,12 +124,23 @@ local function confirmDelete(row)
         { table = row.table, id = row.id })
 end
 
+-- Text typed within the save pause belongs in the export.
+local function export(row)
+    ns.Editor.Flush()
+    local text = Transfer.export(tables()[row.table], row.id)
+    if text then ns.Dialog.ShowExport(text) end
+end
+
 function Actions.ShowMenu(owner, row)
     MenuUtil.CreateContextMenu(owner, function(_, menu)
         if row.kind == "folder" then
             menu:CreateButton(L.MENU_NEW_FOLDER, function() create(row, "folder") end)
             menu:CreateButton(L.MENU_NEW_PAGE, function() create(row, "page") end)
+            menu:CreateButton(L.MENU_IMPORT, function() ns.Dialog.ShowImport(row.table, row.id) end)
         end
+        -- An empty root has nothing to export; parse would refuse its export.
+        local exportButton = menu:CreateButton(L.MENU_EXPORT, function() export(row) end)
+        if row.isRoot and not row.hasChildren then exportButton:SetEnabled(false) end
         if row.isRoot then return end
 
         menu:CreateButton(L.MENU_RENAME, function() askRename(row) end)

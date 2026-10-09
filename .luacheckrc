@@ -29,6 +29,7 @@ read_globals = {
     "C_Timer",
     "GameFontDisable",
     "GameFontHighlight",
+    "GameFontRed",
     "CreateDataProvider",
     "CreateFrame",
     "CreateScrollBoxListLinearView",

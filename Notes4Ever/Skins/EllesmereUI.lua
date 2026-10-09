@@ -61,6 +61,19 @@ local function overlay(S)
         hint = function(fontString)
             font(S, fontString)
         end,
+
+        -- The export and import dialog, built like the window. Its scroll bar
+        -- is styled through the scrollBar role; S.EditBox is for single-line
+        -- boxes, so the multi-line box is only re-fonted, as the editor's.
+        dialog = function(frame, editBox, accept, reason)
+            S.Shell(frame)
+            S.FadeNineSlice(frame.NineSlice)
+            S.Inset(frame.Inset)
+            S.CloseButton(frame.CloseButton)
+            S.Button(accept)
+            font(S, editBox)
+            font(S, reason)
+        end,
     }
 end
 

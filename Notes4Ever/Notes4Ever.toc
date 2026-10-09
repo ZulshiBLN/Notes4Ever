@@ -23,5 +23,6 @@ Skins\EllesmereUI.lua
 UI\Tree.lua
 UI\Actions.lua
 UI\Editor.lua
+UI\Dialog.lua
 UI\Window.lua
 Core.lua

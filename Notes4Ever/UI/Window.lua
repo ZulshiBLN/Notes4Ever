@@ -89,6 +89,11 @@ local function build()
     applyGeometry()
 end
 
+-- The notebook frame, for dialogs that close with it; nil before first use.
+function Window.Frame()
+    return frame
+end
+
 function Window.Toggle()
     if not frame then build() end
     frame:SetShown(not frame:IsShown())
