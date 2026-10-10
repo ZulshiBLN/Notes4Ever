@@ -55,8 +55,10 @@ local ICONS = {
     { name = "healer",   code = cutout(ROLES, "20:39:1:20") },
     { name = "damage",   code = cutout(ROLES, "20:39:22:41") },
     { name = "heading",  code = texture("Interface\\Common\\Indicator-Yellow") },
-    { name = "box",      code = texture("Interface\\RaidFrame\\ReadyCheck-Waiting") },
-    { name = "checked",  code = texture("Interface\\RaidFrame\\ReadyCheck-Ready") },
+    -- The game's checkbox: the box whole - cut, its dark left and bottom
+    -- edges vanish - and the tick cut to its size (Michel, 2026-10-10).
+    { name = "box",      code = texture("Interface\\Buttons\\UI-CheckBox-Up") },
+    { name = "checked",  code = cutout("Interface\\Buttons\\UI-CheckBox-Check", "14:50:14:50") },
 }
 
 local codeOf, nameOf, rgbOf = {}, {}, {}
