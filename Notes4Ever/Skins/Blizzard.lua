@@ -48,6 +48,10 @@ ns.Skin:Register("Blizzard", {
         reason:SetFontObject(GameFontRed)
     end,
 
+    -- The toolbar's buttons: UIPanelButtonTemplate brings the game's art, so
+    -- the base adds nothing; the role exists for an overlay.
+    toolbarButton = function() end,
+
     resizeGrip = function(button)
         button:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
         button:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")

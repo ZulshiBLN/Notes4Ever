@@ -13,7 +13,7 @@ ns.Editor = Editor
 local SAVE_DELAY = 1.5
 
 local state = View.newEditor()
-local frame, editBox, hint, timer
+local frame, editBox, hint, toolbar, timer
 -- True while the editor fills itself, so that does not count as typing.
 local filling = false
 
@@ -32,6 +32,7 @@ local function showState(text)
         editBox:ClearFocus()
     end
     frame:SetShown(open)
+    toolbar:SetShown(open)
     hint:SetShown(not open)
 end
 
@@ -63,9 +64,30 @@ local function onTextChanged(box)
     timer = C_Timer.NewTimer(SAVE_DELAY, Editor.Flush)
 end
 
+-- The toolbar's one way in: `op(text, cursor)` returns the new text and
+-- cursor. The result is set as the editor's own fill, written at once, and
+-- the box gets the keyboard back - a click on a button or menu took it.
+-- The cursor survives that click (probe 11), so it is read here.
+function Editor.Apply(op)
+    if not View.editorPage(state) then return end
+    local text, cursor = op(editBox:GetText(), editBox:GetCursorPosition())
+    filling = true
+    editBox:SetText(text)
+    filling = false
+    View.editorType(state, text)
+    Editor.Flush()
+    editBox:SetFocus()
+    editBox:SetCursorPosition(cursor)
+end
+
 function Editor.Create(parent, left)
+    -- Reached at call time: the TOC loads Toolbar after this file.
+    toolbar = ns.Toolbar.Create(parent)
+    toolbar:SetPoint("TOPLEFT", left, -6)
+    toolbar:SetPoint("RIGHT", -6, 0)
+
     frame = CreateFrame("Frame", nil, parent, "ScrollingEditBoxTemplate")
-    frame:SetPoint("TOPLEFT", left, -6)
+    frame:SetPoint("TOPLEFT", toolbar, "BOTTOMLEFT", 0, -4)
     frame:SetPoint("BOTTOMRIGHT", -6, 6)
     editBox = frame:GetEditBox()
 

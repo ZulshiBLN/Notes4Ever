@@ -30,6 +30,7 @@ read_globals = {
     "GameFontDisable",
     "GameFontHighlight",
     "GameFontRed",
+    "GameTooltip",
     "CreateDataProvider",
     "CreateFrame",
     "CreateScrollBoxListLinearView",

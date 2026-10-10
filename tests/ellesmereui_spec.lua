@@ -177,6 +177,11 @@ describe("EllesmereUI adapter", function()
             assert.are.equal(1, alpha)
         end)
 
+        it("gives a toolbar button the suite's button", function()
+            overlay.toolbarButton({ name = "heading" })
+            assert.are.same({ "Button:heading" }, calls)
+        end)
+
         it("leaves the resize grip to the base", function()
             assert.is_nil(overlay.resizeGrip)
         end)

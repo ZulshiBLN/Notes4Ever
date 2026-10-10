@@ -82,6 +82,11 @@ local function overlay(S)
             font(S, editBox)
             font(S, reason)
         end,
+
+        -- The toolbar above the page: the suite's button, as the dialog's.
+        toolbarButton = function(button)
+            S.Button(button)
+        end,
     }
 end
 

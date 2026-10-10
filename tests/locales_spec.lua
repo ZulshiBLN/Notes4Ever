@@ -48,6 +48,19 @@ describe("locales", function()
         end
     end
 
+    -- The toolbar builds these keys from Format's names, so a colour or icon
+    -- added to Format without a label would fail only when its menu opens.
+    it("has a label for every palette colour and every menu icon", function()
+        local ns = load("enUS")
+        addon.load("Notes4Ever/Format.lua", ns, {})
+        for _, colour in ipairs(ns.Format.PALETTE) do
+            assert.is_string(ns.L_enUS["COLOUR_" .. colour.name:upper()], colour.name)
+        end
+        for _, name in ipairs(ns.Format.ICON_MENU) do
+            assert.is_string(ns.L_enUS["ICON_" .. name:upper()], name)
+        end
+    end)
+
     it("falls back to English for a key German lacks", function()
         local source = addon.read("Notes4Ever/Locales/deDE.lua")
         local key = singleLineKey(source, load("enUS").L_enUS)
