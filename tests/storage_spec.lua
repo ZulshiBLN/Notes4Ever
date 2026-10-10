@@ -12,6 +12,7 @@ local function loadAddon()
     local ns = {}
     addon.load("Notes4Ever/Locales/enUS.lua", ns)
     addon.load("Notes4Ever/Model.lua", ns)
+    addon.load("Notes4Ever/Format.lua", ns)
     addon.load("Notes4Ever/Transfer.lua", ns)
     addon.load("Notes4Ever/Storage.lua", ns)
     return ns

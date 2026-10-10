@@ -79,17 +79,23 @@ why and adds nothing.
 The text is meant to be readable:
 
 ```
-Notes4Ever export 1
+Notes4Ever export 2
 # Dungeons/
 ## Blackrock Depths/
 ### Route
-First left, then ...
+{icon:heading} {gold}Route{/}
+First left, then {red}beware the golem{/} {icon:skull}
 # Shopping
-- 20 linen
+• 20 linen
 ```
 
 Each `#` is a level; a title ending in `/` is a folder; the lines under a
-page's title are its text. Pasting a very large export takes the game a few
+page's title are its text. Formatting is written in braces: a colour by its
+name - `{red}`, `{orange}`, `{gold}`, `{green}`, `{blue}`, `{purple}`,
+`{grey}` - or as `{#rrggbb}`, its end as `{/}`, an icon as `{icon:skull}`.
+A literal `{` is written `\{`, a literal `\` as `\\`; anything else in
+braces is refused with the reason. Exports from earlier builds (`Notes4Ever
+export 1`) still import. Pasting a very large export takes the game a few
 seconds - about ten for 100,000 characters - so for large collections,
 export single folders.
 

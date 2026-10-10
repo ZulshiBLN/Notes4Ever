@@ -1,14 +1,17 @@
 -- The export format, outside the game: what export writes, what parse reads
 -- back, what parse refuses, and how insert adds notes. Transfer.lua is
--- API-free; the rules are in plan 3's RESEARCH companion, Export format.
+-- API-free; version 1's rules are in plan 3's RESEARCH companion, Export
+-- format, version 2's in plan 4a's RESEARCH, Export format version 2.
 
 local addon = require("addon")
 
 local NOW = 1000
 
+-- Format before Transfer, as the TOC loads them.
 local function loadAddon()
     local ns = {}
     addon.load("Notes4Ever/Model.lua", ns)
+    addon.load("Notes4Ever/Format.lua", ns)
     addon.load("Notes4Ever/Transfer.lua", ns)
     return ns
 end
@@ -139,7 +142,7 @@ describe("Transfer", function()
         it("starts with the header and ends every line with a newline", function()
             local db = buildTree()
             local text = Transfer.export(db, db.root.id)
-            assert.are.equal("Notes4Ever export 1\n", text:sub(1, 20))
+            assert.are.equal("Notes4Ever export 2\n", text:sub(1, 20))
             assert.are.equal("\n", text:sub(-1))
         end)
 
@@ -173,7 +176,7 @@ describe("Transfer", function()
             { "another first line",              "Hello\n# p\n",                              "bad_header" },
             { "version zero",                    "Notes4Ever export 0\n# p\n",                "bad_header" },
             { "a version that is not a number",  "Notes4Ever export x\n# p\n",                "bad_header" },
-            { "a newer version",                 "Notes4Ever export 2\n# p\n",                "newer_version" },
+            { "a newer version",                 "Notes4Ever export 3\n# p\n",                "newer_version" },
             { "# without a space",               "Notes4Ever export 1\n#p\n",                 "bad_node_line" },
             { "# and a space only",              "Notes4Ever export 1\n# \n",                 "bad_node_line" },
             { "a first node at depth 2",         "Notes4Ever export 1\n## p\n",               "depth_jump" },
@@ -220,6 +223,109 @@ describe("Transfer", function()
             assert.is_string(L["IMPORT_" .. reason:upper()], reason)
         end
         assert.is_true(count >= 10)
+    end)
+
+    -- Version 2: page text lines carry Notes4Ever's codes as tokens.
+    -- Criterion 2's cases 1 to 6; codes and names come from Format.
+    describe("version 2 page text", function()
+        local Format, R, E
+
+        before_each(function()
+            Format = loadAddon().Format
+            R, E = "|cff" .. Format.rgb("red"), "|r"
+        end)
+
+        -- The page's text lines as export wrote them.
+        local function written(text)
+            local db = Model.newTable(NOW)
+            local page = Model.create(db, db.root.id, "page", "P", NOW)
+            Model.setText(db, page.id, text, NOW)
+            local out = lines(Transfer.export(db, page.id))
+            return { unpack(out, 3) }
+        end
+
+        local function roundTrip(text)
+            local db = Model.newTable(NOW)
+            local page = Model.create(db, db.root.id, "page", "P", NOW)
+            Model.setText(db, page.id, text, NOW)
+            local nodes = assert(Transfer.parse(Transfer.export(db, page.id)))
+            return nodes[1].text
+        end
+
+        local function parsed(textLines)
+            local nodes, reason = Transfer.parse("Notes4Ever export 2\n# P\n" .. textLines .. "\n")
+            return nodes and nodes[1].text, reason
+        end
+
+        -- Case 1.
+        it("gives back every code, unbalanced colours and codes at a line's start", function()
+            local texts = {
+                R .. "red" .. E .. " plain",
+                R .. "open, never closed",
+                "closed, never opened" .. E,
+                E .. R .. "\n" .. R .. "at line starts" .. E,
+                "# a near-miss heading\n#also",
+                "a typed ||cffff2020 stays text",
+                "|cff123abcoutside the palette|r",
+            }
+            for _, colour in ipairs(Format.PALETTE) do
+                texts[#texts + 1] = "|cff" .. colour.rgb .. colour.name .. E
+            end
+            local names = { "heading", "box", "checked" }
+            for _, name in ipairs(Format.ICON_MENU) do names[#names + 1] = name end
+            for _, name in ipairs(names) do
+                texts[#texts + 1] = "a " .. Format.iconCode(name) .. " b" .. Format.iconCode(name)
+            end
+            for _, text in ipairs(texts) do
+                assert.are.equal(text, roundTrip(text))
+            end
+        end)
+
+        it("writes colours, ends and icons as tokens", function()
+            assert.are.same({ "{red}x{/} {icon:skull}" },
+                written(R .. "x" .. E .. " " .. Format.iconCode("skull")))
+        end)
+
+        -- Case 2.
+        it("escapes a backslash, a brace, a backslash before a token, and # or \\ at a line's start", function()
+            assert.are.same({ "a\\\\b" }, written("a\\b"))
+            -- The written `\{` starts with `\`, so it gets one more.
+            assert.are.same({ "\\\\{x}" }, written("{x}"))
+            assert.are.same({ "a\\{x}" }, written("a{x}"))
+            assert.are.same({ "a\\\\{red}" }, written("a\\" .. R))
+            assert.are.same({ "\\#x", "\\\\\\y" }, written("#x\n\\y"))
+            for _, text in ipairs({ "a\\b", "{x}", "a\\" .. R .. "b" .. E, "#x\n\\y", "\\{red}" }) do
+                assert.are.equal(text, roundTrip(text))
+            end
+        end)
+
+        -- Case 3.
+        it("writes a colour outside the palette as {#rrggbb} and reads uppercase hex as lowercase", function()
+            assert.are.same({ "{#123abc}x" }, written("|cff123abcx"))
+            assert.are.equal("|cffabcdefx", (parsed("{#ABCDEF}x")))
+        end)
+
+        -- Case 4.
+        it("writes a lone | as ||, one left from an icon outside the table too", function()
+            assert.are.same({ "a||b" }, written("a|b"))
+            assert.are.same({ "||TInterface\\\\Nope:0||t" }, written("|TInterface\\Nope:0|t"))
+            assert.are.equal("a||b", roundTrip("a|b"))
+        end)
+
+        -- Case 5.
+        it("refuses an unknown token, an uppercase name, an unknown icon, an empty token, a short hex and an open brace", function()
+            for _, line in ipairs({ "{nope}", "{Red}", "{icon:nope}", "{}", "{#12345}", "a {red" }) do
+                local text, reason = parsed(line)
+                assert.is_nil(text, line)
+                assert.are.equal("bad_markup", reason, line)
+            end
+        end)
+
+        -- Case 6; version 3 is in the refusals above.
+        it("still reads version 1, where braces are text", function()
+            local nodes = assert(Transfer.parse("Notes4Ever export 1\n# P\n{red}x\\y\n"))
+            assert.are.equal("{red}x\\y", nodes[1].text)
+        end)
     end)
 
     describe("insert", function()

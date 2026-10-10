@@ -2,7 +2,7 @@ local addonName, ns = ...
 
 -- What the window shows, worked out without WoW: API-free like the model, so
 -- busted runs all of it. The frames in UI/ only draw what this returns.
-local Model = ns.Model
+local Model, Format = ns.Model, ns.Format
 local View = {}
 ns.View = View
 
@@ -42,21 +42,40 @@ local function contains(text, query)
     return text:lower():find(query, 1, true) ~= nil
 end
 
+-- Search matches what a page shows: its text without codes, Format.plain.
+-- Kept per page by row key - not by text, so old versions of a large page
+-- are not held - and recomputed only when the text differs. Exposed for
+-- its spec.
+View.searchCache = {}
+
+local function plainText(key, node, seen)
+    seen[key] = true
+    local entry = View.searchCache[key]
+    if not entry or entry.text ~= node.text then
+        entry = { text = node.text, plain = Format.plain(node.text) }
+        View.searchCache[key] = entry
+    end
+    return entry.plain
+end
+
 -- The search's rows for `node` and its subtree, or nil if nothing in it
 -- matches. A page matches by title or text, a folder by title; below a
--- matching folder everything shows. Every shown folder is open.
-local function searchRows(tableName, node, depth, query, inMatch)
+-- matching folder everything shows. Every shown folder is open. `seen`
+-- collects the pages whose text was read.
+local function searchRows(tableName, node, depth, query, inMatch, seen)
+    local key = keyOf(tableName, node.id)
     local own = inMatch or contains(node.title, query)
-        or (node.kind == "page" and contains(node.text, query))
+        or (node.kind == "page" and contains(plainText(key, node, seen), query))
+    if node.kind == "page" then seen[key] = true end
     local below = {}
     for _, child in ipairs(node.children or {}) do
         local childRows = searchRows(tableName, child, depth + 1, query,
-                                     own and node.kind == "folder")
+                                     own and node.kind == "folder", seen)
         for _, row in ipairs(childRows or {}) do below[#below + 1] = row end
     end
     if not own and #below == 0 then return nil end
     local rows = { {
-        key = keyOf(tableName, node.id), table = tableName, id = node.id, kind = node.kind,
+        key = key, table = tableName, id = node.id, kind = node.kind,
         title = node.title, depth = depth, isRoot = false,
         hasChildren = #below > 0, expanded = #below > 0, searching = true,
     } }
@@ -65,14 +84,15 @@ local function searchRows(tableName, node, depth, query, inMatch)
 end
 
 -- A search leaves `expanded` alone: clearing it shows the tree as it was.
--- Root labels are not matched; a root without matches shows closed.
+-- Root labels are not matched; a root without matches shows closed. A page
+-- gone since the last search leaves the cache.
 local function searchTree(account, character, labels, query)
-    local rows = {}
+    local rows, seen = {}, {}
     for _, root in ipairs({ { "account", account.root }, { "character", character.root } }) do
         local tableName, node = root[1], root[2]
         local below = {}
         for _, child in ipairs(node.children) do
-            for _, row in ipairs(searchRows(tableName, child, 1, query, false) or {}) do
+            for _, row in ipairs(searchRows(tableName, child, 1, query, false, seen) or {}) do
                 below[#below + 1] = row
             end
         end
@@ -82,6 +102,9 @@ local function searchTree(account, character, labels, query)
             hasChildren = #below > 0, expanded = #below > 0, searching = true,
         }
         for _, row in ipairs(below) do rows[#rows + 1] = row end
+    end
+    for key in pairs(View.searchCache) do
+        if not seen[key] then View.searchCache[key] = nil end
     end
     return rows
 end

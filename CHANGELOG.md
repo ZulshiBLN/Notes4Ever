@@ -33,7 +33,9 @@ without EllesmereUI 9.4.
 - A toolbar above the page: gold headings, colours for a word or for what
   you type next, bullets, checkboxes to tick, and raid marker, quest, coin
   and role icons. An icon comes with a space after it, since the game's
-  text field cannot put the cursor directly behind an icon.
+  text field cannot put the cursor directly behind an icon. Export writes
+  the formatting as readable tokens - `{red}`, `{/}`, `{icon:skull}` - and
+  import reads them back; search matches the text as shown, not its codes.
 - A search box above the tree shows only the pages and folders that contain
   what you type, by title or text.
 - Export any page, folder or whole set of notes as readable text to copy out

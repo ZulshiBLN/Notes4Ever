@@ -80,7 +80,33 @@ function Format.iconCode(name)
     return codeOf[name]
 end
 
+-- The palette name of a colour, nil for one outside the palette.
+function Format.colourName(rgb)
+    for _, colour in ipairs(Format.PALETTE) do
+        if colour.rgb == rgb then return colour.name end
+    end
+end
+
 -- Reading -----------------------------------------------------------------
+
+-- The code that starts with the `|` at byte i, and its length: "pipe" for a
+-- typed `||`, "close" for `|r`, "colour" and its rgb, "icon" and its name,
+-- or "lone" for a `|` that starts none of these - one byte. The one grammar
+-- of codes; export reads it too.
+function Format.codeAt(source, i)
+    local nextChar = source:sub(i + 1, i + 1)
+    if nextChar == "|" then return "pipe", nil, 2 end
+    if nextChar == "r" then return "close", nil, 2 end
+    if nextChar == "c" then
+        local rgb = source:match("^|cff([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])", i)
+        if rgb then return "colour", rgb, 10 end
+    elseif nextChar == "T" then
+        local close = source:find("|t", i + 2, true)
+        local name = close and nameOf[source:sub(i, close + 1)]
+        if name then return "icon", name, close + 2 - i end
+    end
+    return "lone", nil, 1
+end
 
 local function charLength(byte)
     if byte >= 0xF0 then return 4 end
@@ -106,31 +132,20 @@ local function read(source)
         local c = source:sub(i, i)
         local consumed = false
         if c == "|" then
-            local nextChar = source:sub(i + 1, i + 1)
-            if nextChar == "|" then
+            -- A `|` that starts no code ("lone"): only that byte goes.
+            local kind, value, length = Format.codeAt(source, i)
+            if kind == "pipe" then
                 units[#units + 1] = { s = "||", colour = stack[#stack], last = i + 1 }
-                i, consumed = i + 2, true
-            elseif nextChar == "r" then
+            elseif kind == "close" then
                 stack[#stack] = nil
                 addCode({ close = true })
-                i, consumed = i + 2, true
-            elseif nextChar == "c" then
-                local rgb = source:match("^|cff([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])", i)
-                if rgb then
-                    stack[#stack + 1] = rgb
-                    addCode({ rgb = rgb })
-                    i, consumed = i + 10, true
-                end
-            elseif nextChar == "T" then
-                local close = source:find("|t", i + 2, true)
-                local name = close and nameOf[source:sub(i, close + 1)]
-                if name then
-                    units[#units + 1] = { icon = name, last = close + 1 }
-                    i, consumed = close + 2, true
-                end
+            elseif kind == "colour" then
+                stack[#stack + 1] = value
+                addCode({ rgb = value })
+            elseif kind == "icon" then
+                units[#units + 1] = { icon = value, last = i + length - 1 }
             end
-            -- A `|` that starts no code: only that byte goes.
-            if not consumed then i, consumed = i + 1, true end
+            i, consumed = i + length, true
         elseif c == "\n" then
             units[#units + 1] = { newline = true, last = i }
             i, consumed = i + 1, true

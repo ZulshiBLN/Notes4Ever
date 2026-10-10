@@ -6,6 +6,7 @@ local addon = require("addon")
 local function loadView()
     local ns = {}
     addon.load("Notes4Ever/Model.lua", ns)
+    addon.load("Notes4Ever/Format.lua", ns)
     addon.load("Notes4Ever/View.lua", ns)
     return ns.View
 end
@@ -95,6 +96,7 @@ describe("View.rows", function()
     before_each(function()
         local ns = {}
         addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/Format.lua", ns)
         addon.load("Notes4Ever/View.lua", ns)
         View, Model = ns.View, ns.Model
     end)
@@ -201,6 +203,7 @@ describe("View.moveTargets", function()
     before_each(function()
         local ns = {}
         addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/Format.lua", ns)
         addon.load("Notes4Ever/View.lua", ns)
         View, Model = ns.View, ns.Model
     end)
@@ -264,6 +267,7 @@ describe("View.deleteSummary", function()
     before_each(function()
         local ns = {}
         addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/Format.lua", ns)
         addon.load("Notes4Ever/View.lua", ns)
         View, Model = ns.View, ns.Model
     end)
@@ -309,6 +313,7 @@ describe("View editor", function()
     before_each(function()
         local ns = {}
         addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/Format.lua", ns)
         addon.load("Notes4Ever/View.lua", ns)
         View, Model = ns.View, ns.Model
     end)
@@ -426,6 +431,7 @@ describe("View.rows with a query", function()
     before_each(function()
         local ns = {}
         addon.load("Notes4Ever/Model.lua", ns)
+        addon.load("Notes4Ever/Format.lua", ns)
         addon.load("Notes4Ever/View.lua", ns)
         View, Model = ns.View, ns.Model
     end)
@@ -526,5 +532,62 @@ describe("View.rows with a query", function()
         end
         View.rows(account, character, expanded, LABELS, "Dead")
         assert.are.same(before, expanded)
+    end)
+
+    -- Plan 4a: search matches what the page shows, Format.plain of its text,
+    -- kept per page and recomputed when the text changes.
+    describe("on formatted text", function()
+        local Format
+
+        before_each(function()
+            local ns = {}
+            addon.load("Notes4Ever/Model.lua", ns)
+            addon.load("Notes4Ever/Format.lua", ns)
+            addon.load("Notes4Ever/View.lua", ns)
+            View, Model, Format = ns.View, ns.Model, ns.Format
+        end)
+
+        local function both()
+            return Model.newTable(NOW), Model.newTable(NOW)
+        end
+
+        -- Case 8: no typed `cff` in the fixture, so only a code could match it.
+        it("finds a word with a colour code inside by its letters, and nothing by the code", function()
+            local account, character = both()
+            page(account, account.root.id, "Boss",
+                 "|cff" .. Format.rgb("red") .. "Dra|r|cff" .. Format.rgb("green") .. "chen|r "
+                 .. Format.iconCode("skull"))
+            assert.are.same({ "Account notes", "  Boss", "Character notes" },
+                            titles(View.rows(account, character, {}, LABELS, "drachen")))
+            for _, query in ipairs({ "ff2020", "cff", "|r", "skull", "raidtarget" }) do
+                assert.are.same({ "Account notes", "Character notes" },
+                                titles(View.rows(account, character, {}, LABELS, query)), query)
+            end
+        end)
+
+        -- Case 7.
+        it("finds a page edited after a search by its new text, not its old", function()
+            local account, character = both()
+            local node = page(account, account.root.id, "Note", "alpha")
+            assert.are.equal(3, #View.rows(account, character, {}, LABELS, "alpha"))
+            Model.setText(account, node.id, "beta", NOW)
+            assert.are.same({ "Account notes", "  Note", "Character notes" },
+                            titles(View.rows(account, character, {}, LABELS, "beta")))
+            assert.are.same({ "Account notes", "Character notes" },
+                            titles(View.rows(account, character, {}, LABELS, "alpha")))
+        end)
+
+        -- Ninth review, hint 4: the cache holds no page that is gone.
+        it("drops a gone page's entry at the next search, and keeps the others", function()
+            local account, character = both()
+            local gone = page(account, account.root.id, "Gone", "x")
+            local kept = page(account, account.root.id, "Kept", "y")
+            View.rows(account, character, {}, LABELS, "z")
+            assert.is_table(View.searchCache[View.key("account", gone.id)])
+            Model.delete(account, gone.id)
+            View.rows(account, character, {}, LABELS, "z")
+            assert.is_nil(View.searchCache[View.key("account", gone.id)])
+            assert.is_table(View.searchCache[View.key("account", kept.id)])
+        end)
     end)
 end)
