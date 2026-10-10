@@ -195,32 +195,40 @@ describe("Format", function()
 
         -- Case 8.
         it("moves a pending colour past an icon inserted into it", function()
-            assert.are.equal("a " .. SKULL .. R .. "^" .. E .. " b",
+            assert.are.equal("a " .. SKULL .. " " .. R .. "^" .. E .. " b",
                 apply("icon", "a " .. R .. "^" .. E .. " b", "skull"))
         end)
 
         -- A pending Default must be read, not re-derived: only an operation
         -- that moves it shows the difference.
         it("moves a pending Default past an icon inserted into it", function()
-            assert.are.equal(R .. "one " .. SKULL .. E .. "^" .. R .. " two" .. E,
+            assert.are.equal(R .. "one " .. SKULL .. " " .. E .. "^" .. R .. " two" .. E,
                 apply("icon", R .. "one " .. E .. "^" .. R .. " two" .. E, "skull"))
         end)
     end)
 
     describe("icon", function()
-        it("inserts an icon at the cursor, the cursor after it", function()
-            assert.are.equal("a" .. STAR .. "^b", apply("icon", "a^b", "star"))
+        -- The client's cursor steps over an icon as over a code: the gap
+        -- right after one is reachable only through a space after it
+        -- (phase 2's in-game check).
+        it("inserts an icon and a space at the cursor, the cursor after both", function()
+            assert.are.equal("a" .. STAR .. " ^b", apply("icon", "a^b", "star"))
+        end)
+
+        it("adds the space even before a space or a line end", function()
+            assert.are.equal("a " .. STAR .. " ^ b", apply("icon", "a ^ b", "star"))
+            assert.are.equal("abc " .. SKULL .. " ^\ndef", apply("icon", "abc ^\ndef", "skull"))
         end)
 
         -- Case 13.
-        it("inserts an icon inside a run without breaking it", function()
-            assert.are.equal(R .. "one " .. SKULL .. "^ two" .. E,
+        it("inserts an icon inside a run without breaking it, its space in the run", function()
+            assert.are.equal(R .. "one " .. SKULL .. " ^ two" .. E,
                 apply("icon", R .. "one ^ two" .. E, "skull"))
         end)
 
         -- Case 15.
         it("keeps a heading's gold over an icon added at its end", function()
-            assert.are.equal(HEAD .. " " .. GOLD .. "Route" .. SKULL .. "^" .. E,
+            assert.are.equal(HEAD .. " " .. GOLD .. "Route" .. SKULL .. " ^" .. E,
                 apply("icon", HEAD .. " " .. GOLD .. "Route^" .. E, "skull"))
         end)
 
@@ -231,9 +239,9 @@ describe("Format", function()
                 local newText, newCursor = Format.icon(text, cursor, "star")
                 return show(newText, newCursor)
             end
-            assert.are.equal("a" .. STAR .. "^\195\164||" .. SKULL, insertAt(2))
-            assert.are.equal("a\195\164" .. STAR .. "^||" .. SKULL, insertAt(4))
-            assert.are.equal("a\195\164||" .. STAR .. "^" .. SKULL, insertAt(5 + 3))
+            assert.are.equal("a" .. STAR .. " ^\195\164||" .. SKULL, insertAt(2))
+            assert.are.equal("a\195\164" .. STAR .. " ^||" .. SKULL, insertAt(4))
+            assert.are.equal("a\195\164||" .. STAR .. " ^" .. SKULL, insertAt(5 + 3))
         end)
     end)
 
@@ -301,14 +309,14 @@ describe("Format", function()
         end)
 
         it("ends a line's kind when an icon goes before its prefix", function()
-            assert.are.equal(STAR .. "^" .. BULLET .. " abc", apply("icon", "^" .. BULLET .. " abc", "star"))
+            assert.are.equal(STAR .. " ^" .. BULLET .. " abc", apply("icon", "^" .. BULLET .. " abc", "star"))
             -- The line is no kind now, so Bullet adds a new prefix in front.
             assert.are.equal(BULLET .. " " .. STAR .. BULLET .. " ab^c", apply("bullet", STAR .. BULLET .. " ab^c"))
         end)
 
         -- Case 21.
         it("writes a prefix in a colour back without it", function()
-            assert.are.equal(BULLET .. " " .. R .. "abc" .. E .. SKULL .. "^",
+            assert.are.equal(BULLET .. " " .. R .. "abc" .. E .. SKULL .. " ^",
                 apply("icon", R .. BULLET .. " abc^" .. E, "skull"))
         end)
     end)
@@ -337,19 +345,19 @@ describe("Format", function()
     describe("the colour stack", function()
         -- Case 24.
         it("reads probe 4's nested colours as the client shows them, and writes them unnested", function()
-            assert.are.equal(R .. "a" .. E .. G .. "b" .. E .. R .. "c" .. E .. STAR .. "^",
+            assert.are.equal(R .. "a" .. E .. G .. "b" .. E .. R .. "c" .. E .. STAR .. " ^",
                 apply("icon", R .. "a" .. G .. "b" .. E .. "c" .. E .. "^", "star"))
         end)
 
         -- Case 25.
         it("carries an unclosed colour across a line end, one closed run per line", function()
-            assert.are.equal(R .. "ab" .. E .. "\n" .. R .. "cd" .. E .. STAR .. "^",
+            assert.are.equal(R .. "ab" .. E .. "\n" .. R .. "cd" .. E .. STAR .. " ^",
                 apply("icon", R .. "ab\ncd^", "star"))
         end)
 
         -- Case 26.
         it("ignores an |r on an empty stack", function()
-            assert.are.equal("a" .. R .. "b" .. E .. STAR .. "^",
+            assert.are.equal("a" .. R .. "b" .. E .. STAR .. " ^",
                 apply("icon", "a" .. E .. R .. "b" .. E .. "^", "star"))
         end)
     end)

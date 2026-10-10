@@ -37,6 +37,24 @@ stop typing, and at once when you close the window, open another page,
 change the tree, log out or `/reload`. Escape leaves the text field; a
 second Escape closes the window.
 
+## Formatting
+
+The toolbar above the page acts where the cursor is:
+
+- **Heading** makes the cursor's line a gold heading, and back.
+- **Colour** colours the word at the cursor. Between words, it colours what
+  you type next. **Default** takes the colour away.
+- **Bullet** puts a bullet before the cursor's line, and takes it away.
+- **Checkbox** puts a box before the cursor's line; on a box, it ticks or
+  unticks it.
+- **Icon** inserts a raid marker, quest sign, coin or role icon.
+
+The game's text field steps over an icon as if it were not there: a click
+right of an icon lands a little too far right, and the arrow keys never
+stop directly behind one. So Icon inserts the icon with a space after it
+and leaves the cursor there - keep typing. Later, a click or the arrow keys
+reach the place after that space.
+
 ## Searching
 
 Type into the box above the tree. It then shows only the pages whose title

@@ -458,11 +458,16 @@ function Format.checkbox(source, cursor)
     return lineOperation(source, cursor, "checkbox")
 end
 
--- Inserts an icon at the cursor; a pending code there moves past it.
+-- Inserts an icon and a space at the cursor; a pending code there moves
+-- past both. The client's cursor steps over an icon as over a code, so
+-- the gap right after one is out of reach for clicks and arrow keys; the
+-- space gives a gap that is not. It takes the run's colour inside a run.
 function Format.icon(source, cursor, name)
     local state = Format.state(source, cursor)
+    local run = runAt(state.units, currentLine(state), state.gap)
     table.insert(state.units, state.gap + 1, { icon = name })
-    state.gap = state.gap + 1
+    table.insert(state.units, state.gap + 2, { s = " ", colour = run })
+    state.gap = state.gap + 2
     return write(state)
 end
 

@@ -30,6 +30,10 @@ without EllesmereUI 9.4.
   account and character notes, how many there are, the schema, when they
   were created, how often they were loaded and how many unreadable sets are
   kept.
+- A toolbar above the page: gold headings, colours for a word or for what
+  you type next, bullets, checkboxes to tick, and raid marker, quest, coin
+  and role icons. An icon comes with a space after it, since the game's
+  text field cannot put the cursor directly behind an icon.
 - A search box above the tree shows only the pages and folders that contain
   what you type, by title or text.
 - Export any page, folder or whole set of notes as readable text to copy out
