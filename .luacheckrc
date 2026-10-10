@@ -31,6 +31,7 @@ read_globals = {
     "GameFontHighlight",
     "GameFontRed",
     "GameTooltip",
+    "HIGHLIGHT_FONT_COLOR",
     "CreateDataProvider",
     "CreateFrame",
     "CreateScrollBoxListLinearView",

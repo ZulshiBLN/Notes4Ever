@@ -55,10 +55,13 @@ local function showIconMenu(owner)
     end)
 end
 
+-- The label as the title, the explanation below in the game's white, as
+-- its own tooltips do.
 local function showTip(button)
     GameTooltip:SetOwner(button, "ANCHOR_TOP")
     GameTooltip:SetText(button.label)
-    GameTooltip:AddLine(button.tip, nil, nil, nil, true)
+    local r, g, b = HIGHLIGHT_FONT_COLOR:GetRGB()
+    GameTooltip:AddLine(button.tip, r, g, b, true)
     GameTooltip:Show()
 end
 
@@ -82,7 +85,12 @@ function Toolbar.Create(parent)
         else
             button:SetPoint("LEFT")
         end
-        button:SetScript("OnClick", onClick)
+        -- An open menu would sit under the tooltip, which covered the
+        -- window's title while the menu was open.
+        button:SetScript("OnClick", function(self)
+            hideTip()
+            onClick(self)
+        end)
         button:SetScript("OnEnter", showTip)
         button:SetScript("OnLeave", hideTip)
         previous = button
